@@ -9,6 +9,7 @@ import argparse
 import time
 import signal
 import requests
+import ssl
 from multiprocessing import Process, current_process
 from setproctitle import setproctitle
 
@@ -30,10 +31,15 @@ def get_rmq_channel(args):
     global connection, channel
 
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
+    context = ssl.create_default_context(cafile=args.capem)
+    context.load_cert_chain(args.pem)
+    ssl_options = pika.SSLOptions(context, "localhost")
+
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
-            host=args.rmqhost, port=5672,
+            host=args.rmqhost, port=5671,
             virtual_host=args.rmqvhost,
+            ssl_options=ssl_options,
             credentials=credentials))
     channel = connection.channel()
     return channel
@@ -67,7 +73,7 @@ def callback_connection_closed(connection, reply_code, reply_text):
     ))
 
 def callback_return(ch, method, properties, body):
-    log.warning('{}: got return msg from qindicator, probably mqsender restarted. stopping'.format(os.getpid()))
+    log.warning('{}: got return msg from qindicator, probably mqsender restarted/stopped. stopping'.format(os.getpid()))
     sys.exit(0)
 
 def qindicator_loop(data):
@@ -264,6 +270,9 @@ def main():
 
     role = 'master'
 
+    def_pem = '/etc/okerr/local.d/client.pem'
+    def_capem = '/etc/okerr/local.d/ca_certificate.pem'
+
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
@@ -285,6 +294,10 @@ def main():
     g.add_argument('--rmquser', default=os.getenv('RMQ_USER', 'okerr'), help='RabbitMQ VirtualHost (okerr)')
     g.add_argument('--rmqpass', default=os.getenv('RMQ_PASS', 'okerr_default_password'),
                    help='RabbitMQ VirtualHost (okerr)')
+    g.add_argument('--pem', default=def_pem,
+                   help='Client cert+key PEM file: {}'.format(def_pem))
+    g.add_argument('--capem', default=def_capem,
+                   help='CA cert PEM file: {}'.format(def_capem))
 
 
     args = parser.parse_args()
