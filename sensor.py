@@ -16,12 +16,14 @@ from check import Check
 
 log = None
 channel = None
-hello_pid = None
 worker_pid = list()
 args = None
 machine_info = None
+role = None # master, worker, helo, qindincator
+
 workers = list()
 qworkers = list()
+qindicators = dict()
 
 
 def get_rmq_channel(args):
@@ -38,10 +40,10 @@ def get_rmq_channel(args):
 
 
 def signal_handler(sig, frame):
-    # print('<{}>: got signal hello: {}'.format(os.getpid(), hello_pid))
-    if hello_pid:
-        # print("<{}> send signal to: {}".format(os.getpid(), hello_pid))
-        os.kill(hello_pid, sig)
+    #
+    #
+    #
+    print('{} {}: got signal'.format(role, os.getpid()))
     sys.exit(0)
 
 def myip():
@@ -69,7 +71,9 @@ def callback_return(ch, method, properties, body):
     sys.exit(0)
 
 def qindicator_loop(data):
+    global role
 
+    role = 'qindicator'
     set_machine_info(args)
     ch = get_rmq_channel(args)
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
@@ -87,8 +91,8 @@ def qindicator_loop(data):
     while True:
         check = Check.from_request(data)
         check.check()
-        setproctitle('sensor.qindicator {} = {} ({}.{} time:{}/{})'.format(
-            name, check.status, reported, nthrottled,int(time.time() - last_reported), throttle))
+        setproctitle('sensor.qindicator {} = {} ({}x{} {})'.format(
+            name, check.status, reported, nthrottled,throttle - int(time.time() - last_reported)))
 
         if check.status != last_status or time.time() > last_reported + throttle:
             resp = check.response()
@@ -112,6 +116,7 @@ def qindicator_loop(data):
 
 def callback_ctl(ch, method, properties, body):
     global workers
+    global qindicators
     data = json.loads(body)
 
     if data['_task'] == 'tproc.kill':
@@ -119,14 +124,28 @@ def callback_ctl(ch, method, properties, body):
             if p.pid == data['pid']:
                 log.info("kill {}: {}".format(p.pid, data['reason']))
                 qworkers.remove(p)
+                qindicators = {key: val for key, val in qindicators.items() if val != p}
                 p.terminate()
                 p.join()
 
     elif data['_task'] == 'tproc.indicator':
+        name = '{}@{}'.format(data.get('name', '???'), data.get('textid', '???'))
+
+        # kill old qi
+        try:
+            p = qindicators[name]
+            log.debug("replace old qi {} {}".format(name, qindicators['name'].pid))
+            qindicators = {key: val for key, val in qindicators.items() if val != p}
+            p.terminate()
+            p.join()
+        except KeyError:
+            pass
+
         # we got it from qtasks
         p = Process(target=qindicator_loop, args=(data,))
         p.start()
         qworkers.append(p)
+        qindicators[name] = p
     else:
         log.error("Do not know how to process _task {!r}".format(data['_task']))
 
@@ -170,7 +189,11 @@ def set_machine_info(args):
 
 def hello_loop():
     global channel
+    global role
 
+    role = 'hello'
+
+    started = time.time()
     set_machine_info(args)
 
     r = {
@@ -185,16 +208,19 @@ def hello_loop():
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
 
     while True:
+        r['uptime'] = int(time.time() - started)
         channel.basic_publish(
             exchange='hello_ex',
             routing_key='',
             body=json.dumps(r))
 
         #time.sleep(args.sleep)
-        connection.sleep(args.sleep)
+        connection.sleep(args.hello_sleep)
 
 def worker_loop():
-    global channel, machine_info
+    global channel, machine_info, role
+    role = 'worker'
+
 
     machine_info = {
         'ip': args.ip,
@@ -222,6 +248,7 @@ def master_watchdog():
         if p.is_alive():
             alive_cnt += 1
         else:
+            log.debug("reap {}".format(p.pid))
             qworkers.remove(p)
             p.join()
             dead_cnt += 1
@@ -233,6 +260,9 @@ def main():
     global args
     global machine_info
     global workers
+    global role
+
+    role = 'master'
 
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
@@ -245,8 +275,9 @@ def main():
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
     g.add_argument('-u', '--unlock', action='store_true', default=False, help='unlock at start')
     g.add_argument('--once', action='store_true', default=False, help='run just once')
-    g.add_argument('-s', '--sleep', type=int, default=60, help='sleep time between runs')
+    g.add_argument('-s', '--hello-sleep', type=int, default=60, help='sleep time between hello runs')
     g.add_argument('-n', type=int, default=10, help='number of worker processes')
+
 
     g = parser.add_argument_group('RabbitMQ options')
     g.add_argument('--rmqhost', default='localhost', help='RabbitMQ host (localhost)')
