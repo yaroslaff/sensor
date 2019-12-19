@@ -290,7 +290,7 @@ def main():
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
     g.add_argument('-u', '--unlock', action='store_true', default=False, help='unlock at start')
     g.add_argument('--once', action='store_true', default=False, help='run just once')
-    g.add_argument('-s', '--hello-sleep', type=int, default=60, help='sleep time between hello runs')
+    g.add_argument('-s', '--hello-sleep', type=int, default=10, help='sleep time between hello runs')
     g.add_argument('-n', type=int, default=10, help='number of worker processes')
 
 
