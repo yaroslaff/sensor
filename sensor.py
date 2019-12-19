@@ -95,31 +95,34 @@ def qindicator_loop(data):
 
     throttle = data['throttle']
 
-    while True:
-        check = Check.from_request(data)
-        check.check()
-        setproctitle('sensor.qindicator {} = {} ({}x{} {})'.format(
-            name, check.status, reported, nthrottled,throttle - int(time.time() - last_reported)))
+    try:
+        while True:
+            check = Check.from_request(data)
+            check.check()
+            setproctitle('sensor.qindicator {} = {} ({}x{} {})'.format(
+                name, check.status, reported, nthrottled,throttle - int(time.time() - last_reported)))
 
-        if check.status != last_status or time.time() > last_reported + throttle:
-            resp = check.response()
-            resp['_machine'] = machine_info
-            resp['_throttled'] = nthrottled
-            ch.basic_publish(
-                exchange='',
-                routing_key=data['resultq'],
-                body=json.dumps(resp),
-                mandatory=True)
-            log.info("{}: {} = {} ({})".format(
-                os.getpid(), name, check.status, check.details))
-            last_status = check.status
-            last_reported = time.time()
-            nthrottled = 0
-            reported += 1
-        else:
-            nthrottled += 1
-        # time.sleep(data['period'])
-        connection.sleep(data['period'])
+            if check.status != last_status or time.time() > last_reported + throttle:
+                resp = check.response()
+                resp['_machine'] = machine_info
+                resp['_throttled'] = nthrottled
+                ch.basic_publish(
+                    exchange='',
+                    routing_key=data['resultq'],
+                    body=json.dumps(resp),
+                    mandatory=True)
+                log.info("{}: {} = {} ({})".format(
+                    os.getpid(), name, check.status, check.details))
+                last_status = check.status
+                last_reported = time.time()
+                nthrottled = 0
+                reported += 1
+            else:
+                nthrottled += 1
+            # time.sleep(data['period'])
+            connection.sleep(data['period'])
+    except KeyboardInterrupt as e:
+        log.error("qindicator keyboard interrupt")
 
 def callback_ctl(ch, method, properties, body):
     global workers
@@ -160,7 +163,7 @@ def callback_ctl(ch, method, properties, body):
 
 def callback_regular_task(ch, method, properties, body):
     data = json.loads(body)
-    print("exch: {} key: {}".format(method.exchange, method.routing_key))
+    # print("exch: {} key: {}".format(method.exchange, method.routing_key))
 
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
     setproctitle('sensor.process {}'.format(name))
@@ -217,15 +220,19 @@ def hello_loop():
 
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
 
-    while True:
-        r['uptime'] = int(time.time() - started)
-        channel.basic_publish(
-            exchange='hello_ex',
-            routing_key='',
-            body=json.dumps(r))
+    try:
+        while True:
+            r['uptime'] = int(time.time() - started)
+            channel.basic_publish(
+                exchange='hello_ex',
+                routing_key='',
+                body=json.dumps(r))
 
-        #time.sleep(args.sleep)
-        connection.sleep(args.hello_sleep)
+            #time.sleep(args.sleep)
+            connection.sleep(args.hello_sleep)
+    except KeyboardInterrupt:
+        # normal quit
+        pass
 
 def worker_loop():
     global channel, machine_info, role
@@ -252,7 +259,10 @@ def worker_loop():
         channel.basic_consume(
             queue=qname, on_message_callback=callback_regular_task, auto_ack=True)
 
-    channel.start_consuming()
+    try:
+        channel.start_consuming()
+    except KeyboardInterrupt as e:
+        pass
 
 def master_watchdog():
     alive_cnt = 0
@@ -349,7 +359,10 @@ def main():
         queue='q:tasks', on_message_callback=callback_ctl, auto_ack=True)
 
     log.info("started")
-    channel.start_consuming()
-
+    try:
+        channel.start_consuming()
+    except KeyboardInterrupt as e:
+        log.error("Exit because of {}".format(e))
+        pass
 
 main()
