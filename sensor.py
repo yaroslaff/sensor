@@ -10,6 +10,7 @@ import time
 import signal
 import requests
 import ssl
+import re
 from multiprocessing import Process, current_process
 from setproctitle import setproctitle
 
@@ -33,7 +34,7 @@ def get_rmq_channel(args):
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
     context = ssl.create_default_context(cafile=args.capem)
     context.load_cert_chain(args.pem)
-    ssl_options = pika.SSLOptions(context, "localhost")
+    ssl_options = pika.SSLOptions(context, "rabbitmq")
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
@@ -159,6 +160,7 @@ def callback_ctl(ch, method, properties, body):
 
 def callback_regular_task(ch, method, properties, body):
     data = json.loads(body)
+    print("exch: {} key: {}".format(method.exchange, method.routing_key))
 
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
     setproctitle('sensor.process {}'.format(name))
@@ -182,14 +184,16 @@ def callback_regular_task(ch, method, properties, body):
 def set_machine_info(args):
     global machine_info
 
-    ctlq = '{}@{}:ctl'.format(args.name, args.location)
+    ctlq = '{}:ctl'.format(args.name)
+
+    m = re.match('(.*)@(.*)\.(.*)', args.name)
 
     machine_info = {
         'ip': args.ip,
         'name': args.name,
-        'location': args.location,
         'pid': os.getpid(),
-        'ctlq': ctlq
+        'ctlq': ctlq,
+        'qlist': [args.name, m.group(2)+'.'+m.group(3), m.group(3)]
     }
 
 
@@ -231,7 +235,6 @@ def worker_loop():
     machine_info = {
         'ip': args.ip,
         'name': args.name,
-        'location': args.location,
         'pid': os.getpid(),
         'pname': current_process().name
     }
@@ -241,9 +244,13 @@ def worker_loop():
 
     channel = get_rmq_channel(args)
     channel.queue_declare(queue='tasks')
-
     channel.basic_consume(
         queue='tasks', on_message_callback=callback_regular_task, auto_ack=True)
+
+    for qname in machine_info['qlist']:
+        channel.queue_declare(queue=qname)
+        channel.basic_consume(
+            queue=qname, on_message_callback=callback_regular_task, auto_ack=True)
 
     channel.start_consuming()
 
@@ -270,14 +277,13 @@ def main():
 
     role = 'master'
 
-    def_pem = '/etc/okerr/local.d/client.pem'
-    def_capem = '/etc/okerr/local.d/ca_certificate.pem'
+    def_pem = '/etc/okerr/ssl/client.pem'
+    def_capem = '/etc/okerr/ssl/ca.pem'
 
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
-    g.add_argument('--name', default=os.getenv('NETPROCESS_NAME','noname'))
-    g.add_argument('--location', default=os.getenv('NETPROCESS_LOCATION','nowhere.tld'))
+    g.add_argument('--name', default=os.getenv('NETPROCESS_NAME','noname@nowhere.tld'))
     g.add_argument('--ip', default=os.getenv('NETPROCESS_IP',myip()))
 
     g = parser.add_argument_group('Options')
@@ -329,13 +335,18 @@ def main():
     set_machine_info(args)
 
     channel = get_rmq_channel(args)
-    channel.queue_declare(queue='qtasks')
 
+    for qname in machine_info['qlist']:
+        channel.queue_declare(queue='q:' + qname)
+        channel.basic_consume(
+            queue='q:'+qname, on_message_callback=callback_ctl, auto_ack=True)
+
+    channel.queue_declare(queue='q:tasks')
     channel.queue_declare(queue=machine_info['ctlq'])
     channel.basic_consume(
         queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
     channel.basic_consume(
-        queue='qtasks', on_message_callback=callback_ctl, auto_ack=True)
+        queue='q:tasks', on_message_callback=callback_ctl, auto_ack=True)
 
     log.info("started")
     channel.start_consuming()
