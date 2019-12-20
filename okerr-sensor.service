@@ -1,0 +1,13 @@
+[Unit]
+Description=okerr process
+After=syslog.target
+PartOf=okerr.service
+After=okerr.service
+
+[Service]
+Type=simple
+ExecStart=%VENV%/bin/python3 %SENSOR_HOME%/sensor.py
+EnvironmentFile=/etc/okerr/env/sensor
+
+[Install]
+WantedBy=okerr.service
