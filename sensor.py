@@ -343,7 +343,7 @@ def main():
         p.start()
         workers.append(p)
 
-    setproctitle('sensor.master {}'.format(args.n))
+    setproctitle('sensor.master {} {}'.format(args.name, args.n))
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGHUP, signal_handler)
@@ -364,7 +364,7 @@ def main():
     channel.basic_consume(
         queue='q:tasks', on_message_callback=callback_ctl, auto_ack=True)
 
-    log.info("started")
+    log.info("started sensor {}".format(args.name))
     try:
         channel.start_consuming()
     except KeyboardInterrupt as e:
