@@ -17,6 +17,7 @@ from setproctitle import setproctitle
 from check import Check
 
 log = None
+connection = None
 channel = None
 worker_pid = list()
 args = None
@@ -30,6 +31,11 @@ qindicators = dict()
 
 def get_rmq_channel(args):
     global connection, channel
+
+    log.debug('Connect to RMQ host {!r}:5671 vhost: {!r} user: {!r} ca: {!r} client: {!r}'.format(
+        args.rmqhost, args.rmqvhost, args.rmquser,
+        args.capem, args.pem
+    ))
 
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
     context = ssl.create_default_context(cafile=args.capem)
