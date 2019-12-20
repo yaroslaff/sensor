@@ -299,8 +299,8 @@ def main():
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
-    g.add_argument('--name', default=os.getenv('NETPROCESS_NAME','noname@nowhere.tld'))
-    g.add_argument('--ip', default=os.getenv('NETPROCESS_IP',myip()))
+    g.add_argument('--name', default=os.getenv('SENSOR_NAME','noname@nowhere.tld'))
+    g.add_argument('--ip', default=os.getenv('SENSOR_IP',myip()))
 
     g = parser.add_argument_group('Options')
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
