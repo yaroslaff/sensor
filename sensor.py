@@ -176,6 +176,7 @@ def callback_regular_task(ch, method, properties, body):
 
     if data['_task'] == 'tproc.indicator':
         check = Check.from_request(data)
+
         check.check()
         resp = check.response()
         resp['_machine'] = machine_info

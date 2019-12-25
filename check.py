@@ -306,7 +306,6 @@ class Check(object):
         return r
 
     def check(self):
-        
         actions = {
             'sslcert':      self.action_sslcert,
             'sha1static':   self.action_sha1static,
@@ -710,7 +709,13 @@ class Check(object):
         domain = self.args["domain"]
         days = int(self.args["days"])
 
-        w = whois.whois(domain)
+        try:
+            w = whois.whois(domain)
+        except (ConnectionResetError, Exception) as e:
+            log.error("EXC {}: {}".format(type(e), e))
+            self.code = -1
+            self.msgtags[ 'WHOIS EXC:' + str(e) ] = 1
+            return
 
         today = datetime.datetime.now()
             
@@ -734,8 +739,6 @@ class Check(object):
             self.status = 'ERR'
         else:
             self.status = 'OK'
-                
-
 
 
     def action_dns(self):
