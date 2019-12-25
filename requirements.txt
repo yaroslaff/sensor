@@ -4,8 +4,6 @@ cffi==1.13.2
 chardet==3.0.4
 cryptography==2.8
 dnspython==1.16.0
-future==0.18.2
-hashget==0.164
 idna==2.8
 pika==1.1.0
 pycparser==2.19
@@ -13,5 +11,4 @@ pyOpenSSL==19.1.0
 python-whois==0.7.2
 requests==2.22.0
 setproctitle==1.1.10
-six==1.13.0
 urllib3==1.25.7
