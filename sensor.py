@@ -11,10 +11,14 @@ import signal
 import requests
 import ssl
 import re
+import datetime
+
 from multiprocessing import Process, current_process
 from setproctitle import setproctitle
 
-from check import Check
+from remotecheck import Check
+import okerrupdate
+
 
 log = None
 connection = None
@@ -28,14 +32,41 @@ workers = list()
 qworkers = list()
 qindicators = dict()
 
+myindicator = None
+
+
+def dhms(sec, sep=" "):
+    out = ""
+    added = 0
+    t = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}
+
+    if isinstance(sec, datetime.timedelta):
+        sec = sec.total_seconds()
+
+    for k in sorted(t, key=t.__getitem__, reverse=True):
+
+        if added == 2:
+            return out.rstrip()
+
+        if sec >= t[k]:
+            n = int(sec / t[k])
+            sec -= n * t[k]
+            out += "%d%s%s" % (n, k, sep)
+            added += 1
+    return out.rstrip()
+
+
+def sanity_check(args):
+    if not os.path.isfile(args.pem):
+        log.error("No PEM file (--pem {})".format(args.pem))
+        sys.exit(1)
+
+    if not os.path.isfile(args.capem):
+        log.error("No CA PEM file (--capem {})".format(args.capem))
+        sys.exit(1)
 
 def get_rmq_channel(args):
     global connection, channel
-
-    log.debug('Connect to RMQ host {!r}:5671 vhost: {!r} user: {!r} ca: {!r} client: {!r}'.format(
-        args.rmqhost, args.rmqvhost, args.rmquser,
-        args.capem, args.pem
-    ))
 
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
     context = ssl.create_default_context(cafile=args.capem)
@@ -223,6 +254,10 @@ def hello_loop():
 
     setproctitle('sensor.hello')
 
+
+    op = okerrupdate.OkerrProject()
+    myindicator = op.indicator("sensor:{}".format(args.name.replace('@','_')), method='heartbeat')
+
     channel = get_rmq_channel(args)
 
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
@@ -234,7 +269,7 @@ def hello_loop():
                 exchange='hello_ex',
                 routing_key='',
                 body=json.dumps(r))
-
+            myindicator.update('OK','Uptime: {}'.format(dhms(time.time() - started)))
             #time.sleep(args.sleep)
             connection.sleep(args.hello_sleep)
     except KeyboardInterrupt:
@@ -291,6 +326,7 @@ def main():
     global machine_info
     global workers
     global role
+    global myindicator
 
     role = 'master'
 
@@ -336,6 +372,8 @@ def main():
     else:
         log.setLevel(logging.INFO)
 
+    sanity_check(args)
+
     p = Process(target = hello_loop, args=())
     p.start()
 
@@ -350,6 +388,11 @@ def main():
     signal.signal(signal.SIGHUP, signal_handler)
 
     set_machine_info(args)
+
+    log.debug('Connect to RMQ host {!r}:5671 vhost: {!r} user: {!r} ca: {!r} client: {!r}'.format(
+        args.rmqhost, args.rmqvhost, args.rmquser,
+        args.capem, args.pem
+    ))
 
     channel = get_rmq_channel(args)
 

@@ -10,7 +10,8 @@ import subprocess
 import whois
 import dns.resolver
 from dns.exception import DNSException
-import pyping
+#import pyping
+import ping3
 import re
 import time
 import ADNS
@@ -22,10 +23,8 @@ import select
 import urllib3
 urllib3.disable_warnings()
 
-from contrib.forcedip import ForcedIPHTTPSAdapter
+from .forcedip import ForcedIPHTTPSAdapter
 ### from myutils import forceunicode
-
-
 
 class DNSBL:
 
@@ -595,21 +594,28 @@ class Check(object):
     def action_ping(self):
 
         try:
-            r = pyping.ping(self.args["host"])
+            # r = pyping.ping(self.args["host"])
+            r = ping3.ping(self.args['host'])
         except Exception as e:
             self.status = "ERR"
             self.details = str(e)
             return 
 
+        if r:
+            self.status = "OK"
+            self.details = "{:.3} ms".format(r)
+        else:
+            self.status = "ERR"
+            self.details = "Ping failed"
+
+        """
         self.details = "{} ({}) rtt: {}/{}/{} lost: {}".format(r.destination, r.destination_ip, r.min_rtt, r.avg_rtt, r.max_rtt, r.packet_lost)
-        
-        # log.debug(self.details)
-                    
+        # log.debug(self.details)                    
         if r.ret_code == 0:
             self.status = "OK"
         else: 
             self.status = "ERR"
-
+        """
 
     def action_tcpport(self):    
         host = self.args["host"]
