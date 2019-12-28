@@ -4,7 +4,7 @@ Okerr remote network sensor
 
 ~~~
 apt install libadns1-dev
-pip3 install okerrsensor
+pip3 install git+https://gitlab.com/yaroslaff/sensor/
 ~~~
 
 configure `/etc/okerrclient.conf`
