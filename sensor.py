@@ -402,7 +402,7 @@ def main():
             queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
 
     channel.queue_declare(queue='tasksq:any')
-    channel.queue_declare(queue=machine_info['ctlq'])
+    channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
     channel.basic_consume(
         queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
     channel.basic_consume(
