@@ -19,6 +19,7 @@ import string
 import urllib.parse
 import shlex
 import select
+import traceback
 
 import urllib3
 urllib3.disable_warnings()
@@ -322,9 +323,14 @@ class Check(object):
         
         if self.cm in actions:
             self.code = None
-        
-            actions[self.cm]()
-            
+
+            try:
+                actions[self.cm]()
+            except Exception as e:
+                log.error('Exception {} when processing {} for {}@{}'.format(e, self.cm, self.name, self.textid))
+                traceback.print_exc()
+                raise
+
             if self.code is None:
                 # set default success code
                 self.code = 200
