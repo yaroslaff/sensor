@@ -204,6 +204,7 @@ def callback_regular_task(ch, method, properties, body):
 
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
     setproctitle('sensor.process {}'.format(name))
+    log.debug('will process {}'.format(name))
 
     if data['_task'] == 'tproc.indicator':
         check = Check.from_request(data)
