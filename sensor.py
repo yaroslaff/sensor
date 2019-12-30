@@ -225,7 +225,7 @@ def callback_regular_task(ch, method, properties, body):
 def set_machine_info(args):
     global machine_info
 
-    ctlq = '{}:ctl'.format(args.name)
+    ctlq = 'ctl:{}'.format(args.name)
 
     m = re.match('(.*)@(.*)\.(.*)', args.name)
 
@@ -292,14 +292,14 @@ def worker_loop():
     setproctitle('sensor.process')
 
     channel = get_rmq_channel(args)
-    channel.queue_declare(queue='tasks')
+    channel.queue_declare(queue='tasks:any')
     channel.basic_consume(
-        queue='tasks', on_message_callback=callback_regular_task, auto_ack=True)
+        queue='tasks:any', on_message_callback=callback_regular_task, auto_ack=True)
 
     for qname in machine_info['qlist']:
-        channel.queue_declare(queue=qname)
+        channel.queue_declare(queue='tasks:' + qname)
         channel.basic_consume(
-            queue=qname, on_message_callback=callback_regular_task, auto_ack=True)
+            queue='tasks:' + qname, on_message_callback=callback_regular_task, auto_ack=True)
 
     try:
         channel.start_consuming()
@@ -397,16 +397,16 @@ def main():
     channel = get_rmq_channel(args)
 
     for qname in machine_info['qlist']:
-        channel.queue_declare(queue='q:' + qname)
+        channel.queue_declare(queue='tasksq:' + qname)
         channel.basic_consume(
-            queue='q:'+qname, on_message_callback=callback_ctl, auto_ack=True)
+            queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
 
-    channel.queue_declare(queue='q:tasks')
+    channel.queue_declare(queue='tasksq:any')
     channel.queue_declare(queue=machine_info['ctlq'])
     channel.basic_consume(
         queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
     channel.basic_consume(
-        queue='q:tasks', on_message_callback=callback_ctl, auto_ack=True)
+        queue='tasksq:any', on_message_callback=callback_ctl, auto_ack=True)
 
     log.info("started sensor {}".format(args.name))
     try:
