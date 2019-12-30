@@ -292,12 +292,12 @@ def worker_loop():
     setproctitle('sensor.process')
 
     channel = get_rmq_channel(args)
-    channel.queue_declare(queue='tasks:any')
+    channel.queue_declare(queue='tasks:any', auto_delete=True)
     channel.basic_consume(
         queue='tasks:any', on_message_callback=callback_regular_task, auto_ack=True)
 
     for qname in machine_info['qlist']:
-        channel.queue_declare(queue='tasks:' + qname)
+        channel.queue_declare(queue='tasks:' + qname, auto_delete=True)
         channel.basic_consume(
             queue='tasks:' + qname, on_message_callback=callback_regular_task, auto_ack=True)
 
@@ -397,11 +397,11 @@ def main():
     channel = get_rmq_channel(args)
 
     for qname in machine_info['qlist']:
-        channel.queue_declare(queue='tasksq:' + qname)
+        channel.queue_declare(queue='tasksq:' + qname, auto_delete=True)
         channel.basic_consume(
             queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
 
-    channel.queue_declare(queue='tasksq:any')
+    channel.queue_declare(queue='tasksq:any', auto_delete=True)
     channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
     channel.basic_consume(
         queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
