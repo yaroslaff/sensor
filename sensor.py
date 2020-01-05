@@ -364,10 +364,10 @@ def main():
 
 
     log = logging.getLogger('okerr')
-    err = logging.StreamHandler(sys.stderr)
-    err.setFormatter(logging.Formatter('%(asctime)s %(message)s',
+    out = logging.StreamHandler(sys.stdout)
+    out.setFormatter(logging.Formatter('%(asctime)s %(message)s',
                                        datefmt='%Y%m%d %H:%M:%S'))
-    log.addHandler(err)
+    log.addHandler(out)
     if args.verbose:
         log.setLevel(logging.DEBUG)
     else:
