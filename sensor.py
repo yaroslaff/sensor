@@ -366,7 +366,7 @@ def main():
     log = logging.getLogger('okerr')
     out = logging.StreamHandler(sys.stdout)
     out.setFormatter(logging.Formatter('%(asctime)s %(message)s',
-                                       datefmt='%Y%m%d %H:%M:%S'))
+                                       datefmt='%Y/%m/%d %H:%M:%S'))
     log.addHandler(out)
     if args.verbose:
         log.setLevel(logging.DEBUG)
