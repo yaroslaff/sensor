@@ -306,6 +306,8 @@ def worker_loop():
         channel.start_consuming()
     except KeyboardInterrupt as e:
         pass
+    except pika.exceptions.AMQPConnectionError as e:
+        log.error("EXCEPTION AMQPConnectionError: {} {}".format(type(e), str(e)))
 
 def master_watchdog():
     alive_cnt = 0
