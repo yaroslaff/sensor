@@ -570,7 +570,9 @@ class Check(object):
             r=self.rget(url, options = options)
 
             if r.status_code != 200:
-                return check_result("ERR","Status code: {} (not 200)".format(str(r.status_code)))
+                self.status = "ERR"
+                self.details = "Status code: {} (not 200)".format(str(r.status_code))
+                return
 
             realhash = hashlib.sha1(r.content).hexdigest()
             # check if it has musthave
