@@ -34,6 +34,8 @@ qindicators = dict()
 
 myindicator = None
 
+processed = 0
+processed_limit = 3
 
 def dhms(sec, sep=" "):
     out = ""
@@ -82,12 +84,22 @@ def get_rmq_channel(args):
     channel = connection.channel()
     return channel
 
+def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
+    started = time.time()
+    while True:
+        for qname in qlist:
+            method, properties, body = ch.basic_get(qname)
+            if method:
+                callback(ch, method, properties, body)
+        if timeout and time.time() > started+timeout:
+            return
+        time.sleep(sleep)
 
 def signal_handler(sig, frame):
     #
     #
     #
-    print('{} {}: got signal'.format(role, os.getpid()))
+    log.info('{} {}: got signal'.format(role, os.getpid()))
     sys.exit(0)
 
 def myip():
@@ -136,8 +148,8 @@ def qindicator_loop(data):
         while True:
             check = Check.from_request(data)
             check.check()
-            setproctitle('sensor.qindicator {} = {} ({}x{} {})'.format(
-                name, check.status, reported, nthrottled,throttle - int(time.time() - last_reported)))
+            setproctitle('sensor.qindicator {} = {} r{} th{}'.format(
+                name, check.status, reported, nthrottled))
 
             if check.status != last_status or time.time() > last_reported + throttle:
                 resp = check.response()
@@ -164,6 +176,7 @@ def qindicator_loop(data):
 def callback_ctl(ch, method, properties, body):
     global workers
     global qindicators
+
     data = json.loads(body)
 
     if data['_task'] == 'tproc.kill':
@@ -177,15 +190,15 @@ def callback_ctl(ch, method, properties, body):
 
     elif data['_task'] == 'tproc.indicator':
         name = '{}@{}'.format(data.get('name', '???'), data.get('textid', '???'))
-
         # kill old qi
         try:
             p = qindicators[name]
-            log.debug("replace old qi {} {}".format(name, qindicators['name'].pid))
+            log.debug("replace old qi {} {}".format(name, qindicators[name].pid))
             qindicators = {key: val for key, val in qindicators.items() if val != p}
             p.terminate()
             p.join()
-        except KeyError:
+        except KeyError as e:
+            # no such qindicator, good!
             pass
 
         # we got it from qtasks
@@ -196,11 +209,11 @@ def callback_ctl(ch, method, properties, body):
     else:
         log.error("Do not know how to process _task {!r}".format(data['_task']))
 
-    master_watchdog()
-
 def callback_regular_task(ch, method, properties, body):
+    global processed
     data = json.loads(body)
     # print("exch: {} key: {}".format(method.exchange, method.routing_key))
+
 
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
     setproctitle('sensor.process {}'.format(name))
@@ -217,11 +230,12 @@ def callback_regular_task(ch, method, properties, body):
             exchange='',
             routing_key=data['resultq'],
             body=json.dumps(resp))
-        log.info("{}: {} = {} ({})".format(os.getpid(), name, check.status, check.details))
+        log.info("{} REPORT {}: {} = {} ({})".format(processed, os.getpid(), name, check.status, check.details))
     else:
         print("Do not know how to process _task {!r}".format(data['_task']))
 
     setproctitle('sensor.process')
+    processed += 1
 
 def set_machine_info(args):
     global machine_info
@@ -281,7 +295,6 @@ def worker_loop():
     global channel, machine_info, role
     role = 'worker'
 
-
     machine_info = {
         'ip': args.ip,
         'name': args.name,
@@ -307,19 +320,33 @@ def worker_loop():
     except KeyboardInterrupt as e:
         pass
     except pika.exceptions.AMQPConnectionError as e:
-        log.error("EXCEPTION AMQPConnectionError: {} {}".format(type(e), str(e)))
+        log.error("EXCEPTION pid:{} AMQPConnectionError: {} {}".format(os.getpid(), type(e), str(e)))
 
 def master_watchdog():
-    alive_cnt = 0
-    dead_cnt = 0
+
+    qalive_cnt = 0
+    qalive_cnt = 0
+
+    for p in workers:
+        if p.is_alive():
+            pass
+        else:
+            log.info("Reap regular worker {} dead (code: {})".format(p, p.exitcode))
+            workers.remove(p)
+
+    while len(workers) != args.n:
+        p = Process(target=worker_loop, args=())
+        p.start()
+        workers.append(p)
+        log.info("Start regular worker {}".format(p.pid))
+
     for p in qworkers:
         if p.is_alive():
-            alive_cnt += 1
+            qalive_cnt += 1
         else:
             log.debug("reap {}".format(p.pid))
             qworkers.remove(p)
             p.join()
-            dead_cnt += 1
 
 
 def main():
@@ -380,10 +407,10 @@ def main():
     p = Process(target = hello_loop, args=())
     p.start()
 
-    for chindex in range(args.n):
-        p = Process(target=worker_loop, args=())
-        p.start()
-        workers.append(p)
+    #for chindex in range(args.n):
+    #    p = Process(target=worker_loop, args=())
+    #    p.start()
+    #    workers.append(p)
 
     setproctitle('sensor.master {} {}'.format(args.name, args.n))
     signal.signal(signal.SIGINT, signal_handler)
@@ -399,21 +426,33 @@ def main():
 
     channel = get_rmq_channel(args)
 
+    master_queues = list()
+
     for qname in machine_info['qlist']:
         channel.queue_declare(queue='tasksq:' + qname, auto_delete=True)
-        channel.basic_consume(
-            queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
+        master_queues.append('tasksq:' + qname)
+
+        #channel.basic_consume(
+        #    queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
+
 
     channel.queue_declare(queue='tasksq:any', auto_delete=True)
     channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
-    channel.basic_consume(
-        queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
-    channel.basic_consume(
-        queue='tasksq:any', on_message_callback=callback_ctl, auto_ack=True)
+    master_queues.append('tasks:any')
+    master_queues.append(machine_info['ctlq'])
+
+    #channel.basic_consume(
+    #    queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
+    #channel.basic_consume(
+    #    queue='tasksq:any', on_message_callback=callback_ctl, auto_ack=True)
 
     log.info("started sensor {}".format(args.name))
     try:
-        channel.start_consuming()
+        while True:
+            master_watchdog()
+            rmq_process(master_queues, channel, callback_ctl, timeout=10)
+
+        # channel.start_consuming()
     except KeyboardInterrupt as e:
         log.error("Exit because of {}".format(e))
         pass
