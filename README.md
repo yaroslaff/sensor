@@ -21,6 +21,7 @@ RMQ_HOST=rabbitmq.example.com
 # Run from shell
 
 ~~~
+. /etc/okerr/env/sensor
 export RMQ_HOST RMQ_PASS RMQ_USER RMQ_VHOST SENSOR_NAME
 
 # sensor.py 

@@ -182,7 +182,7 @@ def callback_ctl(ch, method, properties, body):
     if data['_task'] == 'tproc.kill':
         for p in qworkers:
             if p.pid == data['pid']:
-                log.info("kill {}: {}".format(p.pid, data['reason']))
+                log.info("kill pid:{} {}".format(p.pid, data['reason']))
                 qworkers.remove(p)
                 qindicators = {key: val for key, val in qindicators.items() if val != p}
                 p.terminate()
@@ -193,7 +193,7 @@ def callback_ctl(ch, method, properties, body):
         # kill old qi
         try:
             p = qindicators[name]
-            log.debug("replace old qi {} {}".format(name, qindicators[name].pid))
+            log.debug("replace old qi {} pid:{}".format(name, qindicators[name].pid))
             qindicators = {key: val for key, val in qindicators.items() if val != p}
             p.terminate()
             p.join()
@@ -230,7 +230,7 @@ def callback_regular_task(ch, method, properties, body):
             exchange='',
             routing_key=data['resultq'],
             body=json.dumps(resp))
-        log.info("{} REPORT {}: {} = {} ({})".format(processed, os.getpid(), name, check.status, check.details))
+        log.info("REPORT {}: {} = {} ({})".format(os.getpid(), name, check.status, check.details))
     else:
         print("Do not know how to process _task {!r}".format(data['_task']))
 
@@ -331,20 +331,20 @@ def master_watchdog():
         if p.is_alive():
             pass
         else:
-            log.info("Reap regular worker {} dead (code: {})".format(p, p.exitcode))
+            log.info("Reap regular worker {} pid:{} dead (code: {})".format(p, p.pid, p.exitcode))
             workers.remove(p)
 
     while len(workers) != args.n:
         p = Process(target=worker_loop, args=())
         p.start()
         workers.append(p)
-        log.info("Start regular worker {}".format(p.pid))
+        log.info("Start regular worker pid:{}".format(p.pid))
 
     for p in qworkers:
         if p.is_alive():
             qalive_cnt += 1
         else:
-            log.debug("reap {}".format(p.pid))
+            log.debug("reap qi pid:{}".format(p.pid))
             qworkers.remove(p)
             p.join()
 
@@ -438,7 +438,7 @@ def main():
 
     channel.queue_declare(queue='tasksq:any', auto_delete=True)
     channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
-    master_queues.append('tasks:any')
+    master_queues.append('tasksq:any')
     master_queues.append(machine_info['ctlq'])
 
     #channel.basic_consume(
