@@ -8,8 +8,8 @@ After=okerr.service
 Type=simple
 ExecStart=/usr/bin/python3 /usr/local/bin/sensor.py
 EnvironmentFile=/etc/okerr/env/sensor
-StandardOutput=file:/var/log/sensor.log
-StandardError=file:/var/log/sensor-err.log
+StandardOutput=append:/var/log/okerr/sensor.log
+StandardError=append:/var/log/okerr/sensor-err.log
 
 [Install]
 WantedBy=okerr.service
