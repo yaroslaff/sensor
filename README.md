@@ -30,6 +30,8 @@ export RMQ_HOST RMQ_PASS RMQ_USER RMQ_VHOST SENSOR_NAME
 
 # Install as systemd service
 ~~~
+mkdir /var/log/okerr
+
 cp /usr/local/okerrsensor/okerr-sensor.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable okerr-sensor
