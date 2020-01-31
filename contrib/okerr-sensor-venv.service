@@ -1,0 +1,16 @@
+[Unit]
+Description=okerr network sensor
+After=syslog.target
+PartOf=okerr.service
+After=okerr.service
+
+[Service]
+Type=simple
+ExecStart=%VENV%/bin/python3 %VENV%/bin/sensor.py
+EnvironmentFile=/etc/okerr/env/sensor
+StandardOutput=append:/var/log/okerr/sensor-out.log
+StandardError=append:/var/log/okerr/sensor-err.log
+
+[Install]
+WantedBy=okerr.service
+

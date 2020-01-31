@@ -3,15 +3,16 @@
 import os
 from setuptools import setup
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+def read(filename):
+    return open(os.path.join(os.path.dirname(__file__), filename)).read()
 
 
 setup(
     name='okerrsensor',
-    version='0.0.14',
+    version='0.0.15',
     packages=['remotecheck'],
-    scripts=[ 'sensor.py' ],
+    scripts=['sensor.py'],
 
     # install_requires=[],
 
@@ -34,6 +35,7 @@ setup(
     ],
     data_files=[
         ('okerrsensor', ['contrib/okerr-sensor.service']),
+        ('okerrsensor', ['contrib/okerr-sensor-venv.service']),
     ],
 
     python_requires='>=3',
@@ -44,10 +46,10 @@ setup(
         'Intended Audience :: Developers',
 
         # Pick your license as you wish (should match "license" above)
-         'License :: OSI Approved :: GNU General Public License (GPL)',
+        'License :: OSI Approved :: GNU General Public License (GPL)',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-#        'Programming Language :: Python :: 3.4',
+        # 'Programming Language :: Python :: 3.4',
     ]
 )
