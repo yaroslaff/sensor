@@ -363,6 +363,11 @@ def main():
     def_pem = '/etc/okerr/ssl/client.pem'
     def_capem = '/etc/okerr/ssl/ca.pem'
 
+    def_rmqhost = 'localhost'
+    def_rmqvhost = 'okerr'
+    def_rmquser = 'okerr'
+    def_rmqpass = 'okerr_default_password'
+
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
@@ -371,20 +376,21 @@ def main():
 
     g = parser.add_argument_group('Options')
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
-    g.add_argument('-u', '--unlock', action='store_true', default=False, help='unlock at start')
-    g.add_argument('--once', action='store_true', default=False, help='run just once')
     g.add_argument('-s', '--hello-sleep', type=int, default=10, help='sleep time between hello runs')
     g.add_argument('-n', type=int, default=10, help='number of worker processes')
 
 
     g = parser.add_argument_group('RabbitMQ options')
-    g.add_argument('--rmqhost', default=os.getenv('RMQ_HOST','localhost'), help='RabbitMQ host ($RMQ_HOST, localhost)')
-    g.add_argument('--rmqvhost', default=os.getenv('RMQ_VHOST','okerr'), help='RabbitMQ VirtualHost ($RMQ_VHOST, okerr)')
-    g.add_argument('--rmquser', default=os.getenv('RMQ_USER', 'okerr'), help='RabbitMQ username (okerr)')
-    g.add_argument('--rmqpass', default=os.getenv('RMQ_PASS', 'okerr_default_password'),
-                   help='RabbitMQ password (okerr)')
+    g.add_argument('--rmqhost', default=os.getenv('RMQ_HOST', def_rmqhost),
+                   help='RabbitMQ host ($RMQ_HOST, {})'.format(os.getenv('RMQ_HOST', def_rmqhost)))
+    g.add_argument('--rmqvhost', default=os.getenv('RMQ_VHOST',def_rmqvhost),
+                   help='RabbitMQ VirtualHost ($RMQ_VHOST, {})'.format(os.getenv('RMQ_VHOST', def_rmqvhost)))
+    g.add_argument('--rmquser', default=os.getenv('RMQ_USER', def_rmquser),
+                   help='RabbitMQ username ($RMQ_USER, {})'.format(os.getenv('RMQ_USER', def_rmquser)))
+    g.add_argument('--rmqpass', default=os.getenv('RMQ_PASS', def_rmqpass),
+                   help='RabbitMQ password ($RMQ_PASS, {})'.format(os.getenv('RMQ_PASS', def_rmqpass)))
     g.add_argument('--pem', default=def_pem,
-                   help='Client cert+key PEM file: {}'.format(def_pem))
+                   help='Client cert+key PEM file: ({})'.format(def_pem))
     g.add_argument('--capem', default=def_capem,
                    help='CA cert PEM file: {}'.format(def_capem))
 
