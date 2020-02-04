@@ -20,11 +20,16 @@ import urllib.parse
 import shlex
 import select
 import traceback
+import argparse
 
 import urllib3
 urllib3.disable_warnings()
 
-from .forcedip import ForcedIPHTTPSAdapter
+if __name__ == '__main__':
+    from remotecheck.forcedip import ForcedIPHTTPSAdapter
+else:
+    from .forcedip import ForcedIPHTTPSAdapter
+
 ### from myutils import forceunicode
 
 class DNSBL:
@@ -136,8 +141,21 @@ class Check(object):
             "period","scheduled","last_update","throttle"
             ]
 
+        self.actions = {
+            'sslcert': self.action_sslcert,
+            'sha1static': self.action_sha1static,
+            'sha1dynamic': self.action_sha1dynamic,
+            'ping': self.action_ping,
+            'httpgrep': self.action_httpgrep,
+            'httpstatus': self.action_httpstatus,
+            'tcpport': self.action_tcpport,
+            'whois': self.action_whois,
+            'dns': self.action_dns,
+            'dnsbl': self.action_dnsbl
+        }
+
     def __str__(self):
-        return u"{}@{} = {} ({})".format(self.name, self.textid, self.status, self.details)
+        return "{}@{} = {} ({})".format(self.name, self.textid, self.status, self.details)
     
         out = ''
         for f in self.__dict__:
@@ -306,26 +324,12 @@ class Check(object):
         return r
 
     def check(self):
-        actions = {
-            'sslcert':      self.action_sslcert,
-            'sha1static':   self.action_sha1static,
-            'sha1dynamic':  self.action_sha1dynamic,
-            'ping':         self.action_ping,
-            'httpgrep':     self.action_httpgrep,
-            'httpstatus':   self.action_httpstatus,
-            'tcpport':      self.action_tcpport,
-            'whois':        self.action_whois,
-            'dns':          self.action_dns,
-            'dnsbl':        self.action_dnsbl
-        }
 
-
-        
-        if self.cm in actions:
+        if self.cm in self.actions:
             self.code = None
 
             try:
-                actions[self.cm]()
+                self.actions[self.cm]()
             except Exception as e:
                 log.error('Exception {} when processing {} for {}@{}'.format(e, self.cm, self.name, self.textid))
                 traceback.print_exc()
@@ -843,11 +847,11 @@ class Check(object):
             return
 
     def action_dnsbl(self):
-        host = self.args["host"]
-        skip = self.args["skip"]
-        extra = self.args["extra"]
+        host = self.args.get("host")
+        skip = self.args.get("skip", '')
+        extra = self.args.get("extra", '')
 
-        skip_dnsbl = filter(None, re.split('[, ]+', skip))
+        skip_dnsbl = list(filter(None, re.split('[, ]+', skip)))
         extra_dnsbl = filter(None, re.split('[, ]+', extra))
 
         resolver = dns.resolver.Resolver()
@@ -939,16 +943,15 @@ class Check(object):
         ]
         
                 
-        blacklists = list()                        
+        blacklists = list()
 
         checked = 0
         
         for bl in bl_zones:
-            if not bl in skip_dnsbl:                
+            if not bl in skip_dnsbl:
                 blacklists.append(DNSBL(name=bl, zone=bl))
                 checked += 1
             else:
-                # print "skip", bl[0]                                    
                 pass
 
         for bl in extra_dnsbl:
@@ -980,4 +983,22 @@ class Check(object):
         
 # main
 log = logging.getLogger('okerr')                
-        
+if __name__ == '__main__':
+    ch = Check()
+    ch.name = 'test'
+    ch.textid = 'test'
+
+    parser = argparse.ArgumentParser(description='RemoteCheck manual interface')
+    parser.add_argument('cm', help='CheckMethod. One of: {}'.format(' '.join(ch.actions)))
+    parser.add_argument('option', nargs='+', help='check options in opt=value format, e.g. host=google.com')
+
+    args = parser.parse_args()
+    print(args)
+    ch.cm = args.cm
+    for optval in args.option:
+        opt, val = optval.split('=', 1)
+        ch.set_arg(opt, val)
+
+    ch.check()
+    print(ch)
+
