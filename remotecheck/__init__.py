@@ -976,7 +976,8 @@ class Check(object):
         else:
             self.status = "OK"
             self.details = "Not found in {} DNSBL checked".format(checked)
-            
+            if skip_dnsbl:
+                self.details += ' ({} skipped)'.format(len(skip_dnsbl))
 
     __repr__ = __str__
         
