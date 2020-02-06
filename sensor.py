@@ -2,7 +2,7 @@
 import sys
 import os
 
-import pika
+import pika, pika.exceptions
 import logging
 import json
 import argparse
@@ -15,6 +15,7 @@ import datetime
 
 from multiprocessing import Process, current_process
 from setproctitle import setproctitle
+from dotenv import load_dotenv
 
 from remotecheck import Check
 import okerrupdate
@@ -348,6 +349,8 @@ def master_watchdog():
             qworkers.remove(p)
             p.join()
 
+def exc_wrapper(func, *args):
+    print("wrapper for {}: {}".format(func, args))
 
 def main():
     global log
@@ -360,6 +363,10 @@ def main():
 
     role = 'master'
 
+    # main code
+    conf_file = '/etc/okerr/okerrupdate'
+    load_dotenv(dotenv_path=conf_file)
+
     def_pem = '/etc/okerr/ssl/client.pem'
     def_capem = '/etc/okerr/ssl/ca.pem'
 
@@ -371,8 +378,8 @@ def main():
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
-    g.add_argument('--name', default=os.getenv('SENSOR_NAME','noname@nowhere.tld'))
-    g.add_argument('--ip', default=os.getenv('SENSOR_IP',myip()))
+    g.add_argument('--name', default=os.getenv('SENSOR_NAME', 'noname@nowhere.tld'))
+    g.add_argument('--ip', default=os.getenv('SENSOR_IP', myip()))
 
     g = parser.add_argument_group('Options')
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
@@ -430,7 +437,16 @@ def main():
         args.capem, args.pem
     ))
 
-    channel = get_rmq_channel(args)
+    while True:
+        try:
+            channel = get_rmq_channel(args)
+        except pika.exceptions.AMQPError as e:
+            print("Caught exc: {}, retry".format(e))
+            time.sleep(5)
+        else:
+            print("master got channel:", channel)
+            break
+
 
     master_queues = list()
 
