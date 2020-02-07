@@ -85,6 +85,18 @@ def get_rmq_channel(args):
     channel = connection.channel()
     return channel
 
+def get_rmq_channel_safe(args):
+    while True:
+        try:
+            channel = get_rmq_channel(args)
+        except pika.exceptions.AMQPError as e:
+            print("Caught exc: {}, retry".format(e))
+            time.sleep(5)
+        else:
+            return channel
+
+
+
 def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
     started = time.time()
     while True:
@@ -274,7 +286,7 @@ def hello_loop():
     op = okerrupdate.OkerrProject()
     myindicator = op.indicator("sensor:{}".format(args.name.replace('@','_')), method='heartbeat')
 
-    channel = get_rmq_channel(args)
+    channel = get_rmq_channel_safe(args)
 
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
 
@@ -437,16 +449,7 @@ def main():
         args.capem, args.pem
     ))
 
-    while True:
-        try:
-            channel = get_rmq_channel(args)
-        except pika.exceptions.AMQPError as e:
-            print("Caught exc: {}, retry".format(e))
-            time.sleep(5)
-        else:
-            print("master got channel:", channel)
-            break
-
+    channel = get_rmq_channel_safe(args)
 
     master_queues = list()
 
