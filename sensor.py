@@ -449,7 +449,7 @@ def main():
         args.capem, args.pem
     ))
 
-    channel = get_rmq_channel_safe(args)
+    channel = get_rmq_channel(args)
 
     master_queues = list()
 
