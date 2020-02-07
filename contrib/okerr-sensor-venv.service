@@ -10,6 +10,8 @@ ExecStart=%VENV%/bin/python3 %VENV%/bin/sensor.py
 EnvironmentFile=/etc/okerr/env/sensor
 StandardOutput=append:/var/log/okerr/sensor-out.log
 StandardError=append:/var/log/okerr/sensor-err.log
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=okerr.service
