@@ -43,6 +43,3 @@ systemctl start okerr-sensor
 git clone git@gitlab.com:yaroslaff/sensor.git
 python3 setup.py bdist_wheel
 ~~~
-
-# Wiki
-[wiki](https://gitlab.com/yaroslaff/sensor/-/wikis/home)
