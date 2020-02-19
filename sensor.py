@@ -297,7 +297,10 @@ def hello_loop():
                 exchange='hello_ex',
                 routing_key='',
                 body=json.dumps(r))
-            myindicator.update('OK','Uptime: {}'.format(dhms(time.time() - started)))
+            try:
+                myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
+            except okerrupdate.OkerrExc as e:
+                log.error("okerr update error: {}".format(str(e)))
             #time.sleep(args.sleep)
             connection.sleep(args.hello_sleep)
     except KeyboardInterrupt:
