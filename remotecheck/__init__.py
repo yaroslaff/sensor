@@ -749,11 +749,12 @@ class Check(object):
         
         left = exp - today
 
-        leftdays = left.days
-
-        self.details = str("{} days left".format(leftdays))
+        if left.days > 0:
+            self.details = "{} days left".format(left.days)
+        else:
+            self.details = "expired {} days ago".format(abs(left.days))
         
-        if leftdays < days:        
+        if left.days < days:
             self.status = 'ERR'
         else:
             self.status = 'OK'
