@@ -145,7 +145,7 @@ def qindicator_loop(data):
     role = 'qindicator'
     set_machine_info(args)
     ch = get_rmq_channel(args)
-    name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
+    name = '{}@{}'.format(data.get('name', '???'), data.get('textid','???'))
 
     # ch.add_on_close_callback(callback_connection_closed)
     ch.add_on_return_callback(callback_return)
@@ -168,11 +168,18 @@ def qindicator_loop(data):
                 resp = check.response()
                 resp['_machine'] = machine_info
                 resp['_throttled'] = nthrottled
-                ch.basic_publish(
-                    exchange='',
-                    routing_key=data['resultq'],
-                    body=json.dumps(resp),
-                    mandatory=True)
+                try:
+                    ch.basic_publish(
+                        exchange='',
+                        routing_key=data['resultq'],
+                        body=json.dumps(resp),
+                        mandatory=True)
+
+                except pika.exceptions.AMQPConnectionError as e:
+                    log.error('QIndicator {} pid:{} self-destruct because caught exception: {} {}'.format(
+                        name, os.getpid(), type(e), e))
+                    return
+
                 log.info("{}: {} = {} ({})".format(
                     os.getpid(), name, check.status, check.details))
                 last_status = check.status

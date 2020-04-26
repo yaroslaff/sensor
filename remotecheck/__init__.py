@@ -344,27 +344,29 @@ class Check(object):
             sys.exit(1)        
 
     def action_httpstatus(self):
-    
-               
-        url = self.args.get("url",'http://okerr.com/')
-        options = self.args.get("options",'')
+        url = self.args.get("url", 'http://okerr.com/')
+        options = self.args.get("options", '')
         required_status = int(self.args.get("status", 200))
 
         try:
         
-            r=self.rget(url, options = options, allow_redirects=False)
+            r = self.rget(url, options=options, allow_redirects=False)
 
             if r.status_code == required_status:
                 # good, status as it should be
-                self.details="Got status code {} as expected".format(required_status)
-                self.status="OK"
+                self.details = "Got status code {} {} as expected".format(required_status, r.reason)
+                self.status = "OK"
             else:
-                self.details="Bad status code {} (expected {})".format(r.status_code,required_status)
-                self.status="ERR"
+                if 'Location' in r.headers:
+                    sub_details = "Location: " + r.headers['Location']
+                else:
+                    sub_details = ''
+                self.details = "Bad status code {} {} (not {}) {}".format(
+                    r.status_code, r.reason, required_status, sub_details)
+                self.status = "ERR"
         except requests.exceptions.RequestException as e:
-            self.details="Cannot perform request URL {}: {}".format(url, e)
-            self.status="ERR"
-
+            self.details = "Cannot perform request URL {}: {}".format(url, e)
+            self.status = "ERR"
 
     def action_sslcert(self):
 
@@ -690,7 +692,7 @@ class Check(object):
 
 
         try:
-            r=self.rget(url, options)
+            r = self.rget(url, options)
 
             if r.status_code != 200:
                 self.status = "ERR"
@@ -701,13 +703,13 @@ class Check(object):
 
             # check if it has musthave
             if len(musthave)>0:
-                if ucontent.find(musthave)==-1:
+                if ucontent.find(musthave) == -1:
                     self.status = "ERR"
                     self.details = u"Content has no substring '{}'".format(musthave)
                     return
 
             if len(mustnothave)>0:
-                if ucontent.find(mustnothave)>=0:
+                if ucontent.find(mustnothave) >= 0:
                     self.status = "ERR"
                     self.details = "Content has substring '{}'".format(mustnothave)
                     return
@@ -732,7 +734,7 @@ class Check(object):
         except (ConnectionResetError, Exception) as e:
             log.error("EXC {}: {}".format(type(e), e))
             self.code = -1
-            self.msgtags[ 'WHOIS EXC:' + str(e) ] = 1
+            self.msgtags['WHOIS EXC:' + str(e)] = 1
             return
 
         today = datetime.datetime.now()
