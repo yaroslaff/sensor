@@ -27,7 +27,7 @@ channel = None
 worker_pid = list()
 args = None
 machine_info = None
-role = None # master, worker, helo, qindincator
+role = None  # master, worker, helo, qindincator
 
 workers = list()
 qworkers = list()
@@ -84,6 +84,7 @@ def get_rmq_channel(args):
             credentials=credentials))
     channel = connection.channel()
     return channel
+
 
 def get_rmq_channel_safe(args):
     while True:
@@ -144,7 +145,7 @@ def qindicator_loop(data):
 
     role = 'qindicator'
     set_machine_info(args)
-    ch = get_rmq_channel(args)
+    ch = get_rmq_channel_safe(args)
     name = '{}@{}'.format(data.get('name', '???'), data.get('textid','???'))
 
     # ch.add_on_close_callback(callback_connection_closed)
@@ -159,37 +160,41 @@ def qindicator_loop(data):
 
     try:
         while True:
-            check = Check.from_request(data)
-            check.check()
-            setproctitle('sensor.qindicator {} = {} r{} th{}'.format(
-                name, check.status, reported, nthrottled))
+            try:
+                check = Check.from_request(data)
+                check.check()
+                setproctitle('sensor.qindicator {} = {} r{} th{}'.format(
+                    name, check.status, reported, nthrottled))
 
-            if check.status != last_status or time.time() > last_reported + throttle:
-                resp = check.response()
-                resp['_machine'] = machine_info
-                resp['_throttled'] = nthrottled
-                try:
-                    ch.basic_publish(
-                        exchange='',
-                        routing_key=data['resultq'],
-                        body=json.dumps(resp),
-                        mandatory=True)
+                if check.status != last_status or time.time() > last_reported + throttle:
+                    resp = check.response()
+                    resp['_machine'] = machine_info
+                    resp['_throttled'] = nthrottled
+                    try:
+                        ch.basic_publish(
+                            exchange='',
+                            routing_key=data['resultq'],
+                            body=json.dumps(resp),
+                            mandatory=True)
 
-                except pika.exceptions.AMQPConnectionError as e:
-                    log.error('QIndicator {} pid:{} self-destruct because caught exception: {} {}'.format(
-                        name, os.getpid(), type(e), e))
-                    return
+                    except pika.exceptions.AMQPConnectionError as e:
+                        log.error('QIndicator {} pid:{} self-destruct because caught exception: {} {}'.format(
+                            name, os.getpid(), type(e), e))
+                        return
 
-                log.info("{}: {} = {} ({})".format(
-                    os.getpid(), name, check.status, check.details))
-                last_status = check.status
-                last_reported = time.time()
-                nthrottled = 0
-                reported += 1
-            else:
-                nthrottled += 1
-            # time.sleep(data['period'])
-            connection.sleep(data['period'])
+                    log.info("{}: {} = {} ({})".format(
+                        os.getpid(), name, check.status, check.details))
+                    last_status = check.status
+                    last_reported = time.time()
+                    nthrottled = 0
+                    reported += 1
+                else:
+                    nthrottled += 1
+                # time.sleep(data['period'])
+                connection.sleep(data['period'])
+            except pika.exceptions.AMQPConnectionError as e:
+                log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
+                ch = get_rmq_channel_safe(args)
     except KeyboardInterrupt as e:
         log.error("qindicator keyboard interrupt")
 
@@ -297,8 +302,8 @@ def hello_loop():
 
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
 
-    try:
-        while True:
+    while True:
+        try:
             r['uptime'] = int(time.time() - started)
             channel.basic_publish(
                 exchange='hello_ex',
@@ -310,9 +315,15 @@ def hello_loop():
                 log.error("okerr update error: {}".format(str(e)))
             #time.sleep(args.sleep)
             connection.sleep(args.hello_sleep)
-    except KeyboardInterrupt:
-        # normal quit
-        pass
+        except KeyboardInterrupt:
+            print("Hello got KeyboardInterrupt")
+            # normal quit
+            sys.exit(0)
+        except pika.exceptions.AMQPConnectionError as e:
+            log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
+            channel = get_rmq_channel_safe(args)
+
+
 
 def worker_loop():
     global channel, machine_info, role
@@ -328,7 +339,7 @@ def worker_loop():
     set_machine_info(args)
     setproctitle('sensor.process')
 
-    channel = get_rmq_channel(args)
+    channel = get_rmq_channel_safe(args)
     channel.queue_declare(queue='tasks:any', auto_delete=True)
     channel.basic_consume(
         queue='tasks:any', on_message_callback=callback_regular_task, auto_ack=True)
@@ -343,7 +354,7 @@ def worker_loop():
     except KeyboardInterrupt as e:
         pass
     except pika.exceptions.AMQPConnectionError as e:
-        log.error("EXCEPTION pid:{} AMQPConnectionError: {} {}".format(os.getpid(), type(e), str(e)))
+        log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
 
 def master_watchdog():
 
@@ -439,7 +450,7 @@ def main():
 
     sanity_check(args)
 
-    p = Process(target = hello_loop, args=())
+    p = Process(target=hello_loop, args=())
     p.start()
 
     #for chindex in range(args.n):
