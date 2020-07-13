@@ -92,7 +92,7 @@ def get_rmq_channel_safe(args):
         try:
             channel = get_rmq_channel(args)
         except pika.exceptions.AMQPError as e:
-            print("Caught exc: {}, retry".format(e))
+            print("Caught exc: {}: {}, retry".format(type(e), e))
             time.sleep(5)
         else:
             return channel
