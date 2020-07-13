@@ -2,7 +2,8 @@
 import sys
 import os
 
-import pika, pika.exceptions
+import pika
+import pika.exceptions
 import logging
 import json
 import argparse
@@ -303,6 +304,11 @@ def hello_loop():
     channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
 
     while True:
+
+        if channel is None:
+            log.error("Restore channel...")
+            channel = get_rmq_channel_safe(args)
+
         try:
             r['uptime'] = int(time.time() - started)
             channel.basic_publish(
@@ -320,9 +326,10 @@ def hello_loop():
             # normal quit
             sys.exit(0)
         except pika.exceptions.AMQPConnectionError as e:
+            print("DEBUG HANDLERS:", log.handlers)
             log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
-            channel = get_rmq_channel_safe(args)
-
+            # channel = get_rmq_channel_safe(args)
+            channel = None
 
 
 def worker_loop():
@@ -439,6 +446,7 @@ def main():
 
 
     log = logging.getLogger('okerr')
+
     out = logging.StreamHandler(sys.stdout)
     out.setFormatter(logging.Formatter('%(asctime)s %(message)s',
                                        datefmt='%Y/%m/%d %H:%M:%S'))
