@@ -183,7 +183,7 @@ def qindicator_loop(data):
                             name, os.getpid(), type(e), e))
                         return
 
-                    log.info("{}: {} = {} ({})".format(
+                    log.info("QREPORT {}: {} = {} ({})".format(
                         os.getpid(), name, check.status, check.details))
                     last_status = check.status
                     last_reported = time.time()
@@ -367,6 +367,8 @@ def master_watchdog():
 
     qalive_cnt = 0
     qalive_cnt = 0
+
+    log.info("master_watchdog() check")
 
     for p in workers:
         if p.is_alive():

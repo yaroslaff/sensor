@@ -705,7 +705,7 @@ class Check(object):
             if len(musthave)>0:
                 if ucontent.find(musthave) == -1:
                     self.status = "ERR"
-                    self.details = u"Content has no substring '{}'".format(musthave)
+                    self.details = "Content has no substring '{}'".format(musthave)
                     return
 
             if len(mustnothave)>0:
