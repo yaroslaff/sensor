@@ -103,7 +103,13 @@ def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
     started = time.time()
     while True:
         for qname in qlist:
-            method, properties, body = ch.basic_get(qname)
+            try:
+                method, properties, body = ch.basic_get(qname)
+            except pika.exceptions.AMQPConnectionError as e:
+                log.error("rmq_process EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(
+                    os.getpid(), role, type(e), str(e)))
+                ch = get_rmq_channel_safe(args)
+
             if method:
                 callback(ch, method, properties, body)
         if timeout and time.time() > started+timeout:
