@@ -100,6 +100,7 @@ def get_rmq_channel_safe(args):
 
 
 def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
+    global properties
     started = time.time()
     while True:
         for qname in qlist:
@@ -458,6 +459,7 @@ def main():
     out = logging.StreamHandler(sys.stdout)
     out.setFormatter(logging.Formatter('%(asctime)s %(message)s',
                                        datefmt='%Y/%m/%d %H:%M:%S'))
+    out.setLevel(logging.INFO)
     log.addHandler(out)
     if args.verbose:
         log.setLevel(logging.DEBUG)
