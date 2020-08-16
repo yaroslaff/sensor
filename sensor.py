@@ -256,7 +256,9 @@ def callback_regular_task(ch, method, properties, body):
     if data['_task'] == 'tproc.indicator':
         check = Check.from_request(data)
 
+        # try/except?
         check.check()
+
         resp = check.response()
         resp['_machine'] = machine_info
 
@@ -335,7 +337,8 @@ def hello_loop():
             sys.exit(0)
         except pika.exceptions.AMQPConnectionError as e:
             print("DEBUG HANDLERS:", log.handlers)
-            log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
+            log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(
+                os.getpid(), role, type(e), str(e)))
             # channel = get_rmq_channel_safe(args)
             channel = None
 
@@ -515,7 +518,11 @@ def main():
     try:
         while True:
             master_watchdog()
-            rmq_process(master_queues, channel, callback_ctl, timeout=10)
+            try:
+                rmq_process(master_queues, channel, callback_ctl, timeout=10)
+            except Exception as e:
+                log.error("MAIN LOOP exception ({}): {}".format(type(e), str(e)))
+                pass
 
         # channel.start_consuming()
     except KeyboardInterrupt as e:

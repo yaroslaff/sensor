@@ -204,8 +204,9 @@ class Check(object):
     def response(self):
         r = dict()
         r['_task'] = 'tproc.reply'
-        for field in ['name', 'textid', 'status', 'details', 'set_args','logs','alerts','mtime','problem','code']:
-            r[field] = getattr(self,field)
+        for field in ['name', 'textid', 'status', 'details', 'set_args', 'logs', 'alerts',
+                      'mtime', 'problem', 'code']:
+            r[field] = getattr(self, field)
             
         # make code message
         r['code_message'] = ''.join(["["+k+"]" for k in self.msgtags.keys()])      
@@ -333,6 +334,8 @@ class Check(object):
             except Exception as e:
                 log.error('Exception {} when processing {} for {}@{}'.format(e, self.cm, self.name, self.textid))
                 traceback.print_exc()
+                self.status = 'ERR'
+                self.details = 'exception: ' + str(e)
                 raise
 
             if self.code is None:
@@ -538,7 +541,7 @@ class Check(object):
         setargs = dict()
 
         try:
-            r=self.rget(url, options)
+            r = self.rget(url, options)
            
             if r.status_code != 200:
                 self.status = "ERR"
@@ -547,13 +550,13 @@ class Check(object):
 
             realhash = hashlib.sha1(r.content).hexdigest()
             # check if it has musthave
-            if len(pagehash)==0:
+            if len(pagehash) == 0:
                 self.status = "OK"
                 self.details = "hash initialized"
-                self.set_arg("hash",realhash)
+                self.set_arg("hash", realhash)
                 return 
             else:                    
-                if realhash==pagehash:
+                if realhash == pagehash:
                     self.details = "hash match"
                     self.status = "OK"
                     return
