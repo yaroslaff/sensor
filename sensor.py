@@ -522,7 +522,7 @@ def main():
                 rmq_process(master_queues, channel, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
-                ch = get_rmq_channel_safe(args)
+                channel = get_rmq_channel_safe(args)
             except Exception as e:
                 log.error("MAIN LOOP exception ({}): {}".format(type(e), str(e)))
                 pass
