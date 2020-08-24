@@ -405,6 +405,9 @@ def master_watchdog():
 def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
 
+def declare_qeueues(ch, qlist=None):
+
+
 def main():
     global log
     global channel
@@ -522,7 +525,9 @@ def main():
                 rmq_process(master_queues, channel, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
-                channel = get_rmq_channel_safe(args)
+                # exit for restart
+                sys.exit(1)
+
             except Exception as e:
                 log.error("MAIN LOOP exception ({}): {}".format(type(e), str(e)))
                 pass
