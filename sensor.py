@@ -405,8 +405,6 @@ def master_watchdog():
 def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
 
-def declare_qeueues(ch, qlist=None):
-
 
 def main():
     global log
