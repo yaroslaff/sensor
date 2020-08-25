@@ -321,7 +321,7 @@ class Check(object):
                 url = urllib.parse.urlunparse(url_changed)
         
         r = session.get(
-            url, verify=verify, headers=headers, allow_redirects = allow_redirects)
+            url, verify=verify, headers=headers, allow_redirects=allow_redirects, timeout=3)
         return r
 
     def check(self):
