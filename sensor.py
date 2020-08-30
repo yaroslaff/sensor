@@ -336,7 +336,6 @@ def hello_loop():
             # normal quit
             sys.exit(0)
         except pika.exceptions.AMQPConnectionError as e:
-            print("DEBUG HANDLERS:", log.handlers)
             log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(
                 os.getpid(), role, type(e), str(e)))
             # channel = get_rmq_channel_safe(args)
@@ -524,6 +523,7 @@ def main():
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
                 # exit for restart
+                print("Exit master pid {}".format(os.getpid()))
                 sys.exit(1)
 
             except Exception as e:
