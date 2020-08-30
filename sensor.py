@@ -14,7 +14,7 @@ import ssl
 import re
 import datetime
 
-from multiprocessing import Process, current_process
+from multiprocessing import Process, current_process, active_children
 from setproctitle import setproctitle
 from dotenv import load_dotenv
 
@@ -92,10 +92,10 @@ def get_rmq_channel_safe(args):
         try:
             channel = get_rmq_channel(args)
         except pika.exceptions.AMQPError as e:
-            print("Caught AMPQ exc: {}: {}, retry".format(type(e), e))
+            print("Caught AMPQ exc ({}): {}: {}, retry".format(role, type(e), e))
             time.sleep(5)
         except ConnectionError as e:
-            print("Caught generic python exc: {}: {}, retry".format(type(e), e))
+            print("Caught generic python exc ({}): {}: {}, retry".format(role, type(e), e))
             time.sleep(5)
         else:
             return channel
@@ -110,7 +110,10 @@ def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
             except pika.exceptions.AMQPConnectionError as e:
                 log.error("rmq_process EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(
                     os.getpid(), role, type(e), str(e)))
-                ch = get_rmq_channel_safe(args)
+                # ch = get_rmq_channel_safe(args)
+                print("Exit now ({} pid: {})....".format(role, os.getpid()))
+                master_exit(1)  # Only in master here. crash immediately, systemd will restart us
+                print("Exited???")
 
             if method:
                 callback(ch, method, properties, body)
@@ -124,6 +127,14 @@ def signal_handler(sig, frame):
     #
     log.info('{} {}: got signal'.format(role, os.getpid()))
     sys.exit(0)
+
+def master_exit(status=0):
+    killed = list()
+    for p in active_children():
+        killed.append(p.pid)
+        p.terminate()
+    print("Master exit killed:", ' '.join([str(pid)  for pid in killed]))
+    sys.exit(status)
 
 def myip():
     url = 'https://diagnostic.opendns.com/myip'
@@ -524,11 +535,11 @@ def main():
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
                 # exit for restart
                 print("Exit master pid {}".format(os.getpid()))
-                sys.exit(1)
+                master_exit(1)
 
             except Exception as e:
                 log.error("MAIN LOOP exception ({}): {}".format(type(e), str(e)))
-                pass
+                master_exit(1)
 
         # channel.start_consuming()
     except KeyboardInterrupt as e:
