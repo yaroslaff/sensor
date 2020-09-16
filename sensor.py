@@ -515,10 +515,14 @@ def main():
         #    queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
 
 
-    channel.queue_declare(queue='tasksq:any', auto_delete=True)
-    channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
-    master_queues.append('tasksq:any')
-    master_queues.append(machine_info['ctlq'])
+    try:
+        channel.queue_declare(queue='tasksq:any', auto_delete=True)
+        channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
+        master_queues.append('tasksq:any')
+        master_queues.append(machine_info['ctlq'])
+    except Exception as e:
+        print("MAIN FAILED TO DECLARE QUEUES, QUIT. {}: {}". format(type(e), str(e)))
+        master_exit(1)
 
     #channel.basic_consume(
     #    queue=machine_info['ctlq'], on_message_callback=callback_ctl, auto_ack=True, exclusive=True)
