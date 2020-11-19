@@ -4,7 +4,7 @@ Okerr remote network sensor
 
 ~~~
 apt install libadns1-dev
-pip3 install git+https://gitlab.com/yaroslaff/sensor/
+pip3 install git+https://github.com/yaroslaff/sensor/
 ~~~
 
 configure `/etc/okerrclient.conf`
@@ -46,7 +46,11 @@ python3 setup.py bdist_wheel
 
 # Other okerr resources
 - [Okerr main website](https://okerr.com/)
-- [Okerr-server source code repository](gitlab.com/yaroslaff/okerr-dev/) and [okerr server wiki doc](https://gitlab.com/yaroslaff/okerr-dev/wikis/)
-- [Okerr client (okerrupdate) repositoty](https://gitlab.com/yaroslaff/okerrupdate) and [okerrupdate wiki doc](https://gitlab.com/yaroslaff/okerrupdate/wikis/)
-- [Okerrbench network server benchmark](https://gitlab.com/yaroslaff/okerrbench)
-- [Okerr network sensor](https://gitlab.com/yaroslaff/sensor)
+- [Okerr-server source code repository](https://github.com/yaroslaff/okerr-dev/) 
+- [Okerr client (okerrupdate) repositoty](https://github.com/yaroslaff/okerrupdate) and [okerrupdate documentation](https://okerrupdate.readthedocs.io/)
+- [Okerrbench network server benchmark](https://github.com/yaroslaff/okerrbench)
+- [Okerr custom status page](https://github.com/yaroslaff/okerr-status)
+- [Okerr JS-powered static status page](https://github.com/yaroslaff/okerrstatusjs)
+- [Okerr network sensor](https://github.com/yaroslaff/sensor)
+
+
