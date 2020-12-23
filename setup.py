@@ -10,7 +10,7 @@ def read(filename):
 
 setup(
     name='okerrsensor',
-    version='0.0.38',
+    version='0.0.39',
     packages=['remotecheck'],
     scripts=['sensor.py'],
 
