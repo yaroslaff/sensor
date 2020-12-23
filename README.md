@@ -40,7 +40,7 @@ systemctl start okerr-sensor
 
 # Build dist from source
 ~~~
-git clone git@gitlab.com:yaroslaff/sensor.git
+git clone git@github.com:yaroslaff/sensor.git
 python3 setup.py bdist_wheel
 ~~~
 
