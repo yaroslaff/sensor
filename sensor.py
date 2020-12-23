@@ -32,6 +32,7 @@ role = None  # master, worker, helo, qindincator
 
 workers = list()
 qworkers = list()
+hello_process = None
 qindicators = dict()
 
 myindicator = None
@@ -385,11 +386,17 @@ def worker_loop():
         log.error("EXCEPTION pid:{} ({}) AMQPConnectionError: {} {}".format(os.getpid(), role, type(e), str(e)))
 
 def master_watchdog():
+    global hello_process
 
     qalive_cnt = 0
     qalive_cnt = 0
 
     log.info("master_watchdog() check")
+
+
+    #
+    # bury and restart regular workers
+    # 
 
     for p in workers:
         if p.is_alive():
@@ -404,6 +411,10 @@ def master_watchdog():
         workers.append(p)
         log.info("Start regular worker pid:{}".format(p.pid))
 
+    #
+    # Bury (not restart) qworkers
+    #
+
     for p in qworkers:
         if p.is_alive():
             qalive_cnt += 1
@@ -411,6 +422,16 @@ def master_watchdog():
             log.debug("reap qi pid:{}".format(p.pid))
             qworkers.remove(p)
             p.join()
+
+    #
+    # restart hello
+    #
+
+    if not hello_process.is_alive():
+        log.info(f'Reap old hello process pid {hello_process.pid}')
+        hello_process = Process(target=hello_loop, args=())
+        hello_process.start()
+        print(f'New hello process pid {hello_process.pid}')
 
 def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
@@ -422,6 +443,7 @@ def main():
     global args
     global machine_info
     global workers
+    global hello_process
     global role
     global myindicator
 
@@ -483,8 +505,8 @@ def main():
 
     sanity_check(args)
 
-    p = Process(target=hello_loop, args=())
-    p.start()
+    hello_process = Process(target=hello_loop, args=())
+    hello_process.start()
 
     #for chindex in range(args.n):
     #    p = Process(target=worker_loop, args=())
