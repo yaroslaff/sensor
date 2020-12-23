@@ -431,7 +431,7 @@ def master_watchdog():
         log.info(f'Reap old hello process pid {hello_process.pid}')
         hello_process = Process(target=hello_loop, args=())
         hello_process.start()
-        print(f'New hello process pid {hello_process.pid}')
+        log.info(f'New hello process pid {hello_process.pid}')
 
 def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
