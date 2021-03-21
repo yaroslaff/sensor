@@ -20,11 +20,11 @@ RMQ_HOST=rabbitmq.example.com
 ~~~
 # Run from shell
 
-~~~
-. /etc/okerr/env/sensor
-export RMQ_HOST RMQ_PASS RMQ_USER RMQ_VHOST SENSOR_NAME
-
-# sensor.py 
+~~~shell
+$ cp .env-example .env
+$ vim .env # Adjust settings
+$ . .env
+$ sudo sensor.py 
 20191228 01:09:35 started sensor deb10@nsk.ru
 ~~~
 

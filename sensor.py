@@ -525,7 +525,13 @@ def main():
         args.capem, args.pem
     ))
 
-    channel = get_rmq_channel(args)
+    try:
+        channel = get_rmq_channel(args)
+    except (ConnectionResetError, Exception) as e:
+        print(f"Failed to connect: {args.rmqhost}:5671 vhost: {args.rmqvhost} user: {args.rmquser}")
+        print("EXIT")
+        master_exit(1)
+
 
     master_queues = list()
 

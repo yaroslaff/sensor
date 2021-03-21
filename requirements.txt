@@ -1,8 +1,12 @@
-adns===1.4-py1
+# adns===1.4-py1
+git+https://github.com/trolldbois/python3-adns.git
+python-dotenv
+ping3
+okerrupdate
 certifi==2019.9.11
 cffi==1.13.2
 chardet==3.0.4
-cryptography>=3.2
+cryptography==3.2
 dnspython==1.16.0
 idna==2.8
 pika==1.1.0

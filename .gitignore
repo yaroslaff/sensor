@@ -3,4 +3,5 @@ __pycache__/
 build/
 dist/
 okerrsensor.egg-info/
+.env
 
