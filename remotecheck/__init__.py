@@ -739,6 +739,8 @@ class Check(object):
             self.code = -1
             self.msgtags['WHOIS EXC:' + str(e)] = 1
             self.problem = True
+            self.status = "ERR"
+            self.details = str(e)
             return
 
         today = datetime.datetime.now()
