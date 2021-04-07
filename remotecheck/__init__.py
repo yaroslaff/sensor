@@ -738,6 +738,7 @@ class Check(object):
             log.error("EXC {}: {}".format(type(e), e))
             self.code = -1
             self.msgtags['WHOIS EXC:' + str(e)] = 1
+            self.problem = True
             return
 
         today = datetime.datetime.now()

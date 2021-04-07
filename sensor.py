@@ -487,6 +487,16 @@ def main():
     g.add_argument('--capem', default=def_capem,
                    help='CA cert PEM file: {}'.format(def_capem))
 
+    g = parser.add_argument_group('Debugging/development')
+    g.add_argument('--manual', default=list(), nargs='+',
+                   help='Run manual check, example: --manual httpstatus url=http://okerr.com status=200')
+
+
+    # {'_task': 'tproc.indicator', 'id': 20088699, 'textid': 'okrrdm', 'name': 'медуза', 'cm': 'httpstatus', 
+    # 'args': {'url': 'https://meduza.io', 'status': '200', 'options': ''}, 
+    # 'mtime': 1608919844, 'period': 3600, 'throttle': 2400, 'resultq': 'results:charlie:9525'}
+
+
 
     args = parser.parse_args()
 
@@ -502,6 +512,24 @@ def main():
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
+
+
+    if args.manual:
+
+        data = dict(textid='_sensor', name='_manual', cm=args.manual[0], args=dict())
+
+        for arg in args.manual[1:]:
+            k,v = arg.split('=', 1)
+            data['args'][k]=v
+
+        print("REQUEST:\n", json.dumps(data, indent=4),"\n")
+        check = Check.from_request(data)
+        # try/except?
+        check.check()
+        resp = check.response()
+        print("RESPONSE:\n", json.dumps(resp, indent=4),"\n")
+
+        sys.exit(0)
 
     sanity_check(args)
 
