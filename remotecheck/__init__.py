@@ -736,7 +736,7 @@ class Check(object):
             w = whois.whois(domain)
         except (ConnectionResetError, Exception) as e:
             log.error("EXC {}: {}".format(type(e), e))
-            self.code = 400 # permanent error
+            self.code = 200 
             # self.msgtags['WHOIS EXC:' + str(e)] = 1
             # self.problem = True
             self.status = "ERR"
