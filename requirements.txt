@@ -15,4 +15,4 @@ pyOpenSSL==19.1.0
 python-whois==0.7.2
 requests==2.22.0
 setproctitle==1.1.10
-urllib3==1.25.7
+urllib3==1.26.5
