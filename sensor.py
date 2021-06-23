@@ -138,7 +138,7 @@ def master_exit(status=0):
     sys.exit(status)
 
 def myip():
-    url = 'https://diagnostic.opendns.com/myip'
+    url = 'https://ifconfig.me/ip'
 
     while True:
         try:
