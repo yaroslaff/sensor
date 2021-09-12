@@ -428,10 +428,10 @@ def master_watchdog():
     #
 
     if not hello_process.is_alive():
-        log.info(f'Reap old hello process pid {hello_process.pid}')
+        log.info('Reap old hello process pid {pid}'.format(pid=hello_process.pid))
         hello_process = Process(target=hello_loop, args=())
         hello_process.start()
-        log.info(f'New hello process pid {hello_process.pid}')
+        log.info('New hello process pid {pid}'.format(pid=hello_process.pid))
 
 def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
@@ -556,7 +556,9 @@ def main():
     try:
         channel = get_rmq_channel(args)
     except (ConnectionResetError, Exception) as e:
-        print(f"Failed to connect: {args.rmqhost}:5671 vhost: {args.rmqvhost} user: {args.rmquser}")
+        print("Failed to connect: {host}:5671 vhost: {vhost} user: {user}".format(
+            host=args.rmqhost, vhost=args.rmqvhost, user=args.rmquser
+        ))
         print("EXIT")
         master_exit(1)
 
