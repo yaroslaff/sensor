@@ -257,6 +257,7 @@ def callback_ctl(ch, method, properties, body):
 
 def callback_regular_task(ch, method, properties, body):
     global processed
+    body = body.decode('utf8')
     data = json.loads(body)
     # print("exch: {} key: {}".format(method.exchange, method.routing_key))
 
