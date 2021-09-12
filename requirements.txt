@@ -1,5 +1,5 @@
 # adns===1.4-py1
-git+https://github.com/trolldbois/python3-adns.git#egg=adns
+git+https://github.com/trolldbois/python3-adns.git
 python-dotenv
 ping3
 okerrupdate
