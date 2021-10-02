@@ -873,7 +873,9 @@ class Check(object):
             ips.append(host)
         except (socket.error, OSError) as e:
             try:
-                answers = resolver.query(host, 'A')
+                # old version
+                # answers = resolver.query(host, 'A')
+                answers = resolver.resolve(host, 'A')
                 assert(answers is not None)
 
                 for ans in answers:
