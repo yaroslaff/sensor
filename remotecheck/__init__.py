@@ -872,10 +872,10 @@ class Check(object):
             socket.inet_aton(host)
             ips.append(host)
         except (socket.error, OSError) as e:
-            print("ZZZZZ dnsbl exception {} for {}".format(e, host))
             try:
                 answers = resolver.query(host, 'A')
-                
+                assert(answers is not None)
+
                 for ans in answers:
                     ips.append(str(ans))
                 
