@@ -40,6 +40,8 @@ myindicator = None
 processed = 0
 processed_limit = 3
 
+started = time.time()
+
 def dhms(sec, sep=" "):
     out = ""
     added = 0
@@ -219,6 +221,9 @@ def qindicator_loop(data):
     except KeyboardInterrupt as e:
         log.error("qindicator keyboard interrupt")
 
+def oneprocess_callback_ctl(ch, method, properties, body):
+    print("1p callback ctl",ch, method, properties, body)
+
 def callback_ctl(ch, method, properties, body):
     global workers
     global qindicators
@@ -253,7 +258,7 @@ def callback_ctl(ch, method, properties, body):
         qworkers.append(p)
         qindicators[name] = p
     else:
-        log.error("Do not know how to process _task {!r}".format(data['_task']))
+        log.error("Do not know how to process _task {!r} {!r}".format(data['_task'], data))
 
 def callback_regular_task(ch, method, properties, body):
     global processed
@@ -438,6 +443,90 @@ def exc_wrapper(func, *args):
     print("wrapper for {}: {}".format(func, args))
 
 
+def oneprocess(args):
+
+
+    def hello(channel, myindicator):
+
+        r = {
+            '_task': 'tproc.hello',
+            '_machine': machine_info
+        }
+
+        r['uptime'] = int(time.time() - started)
+        channel.basic_publish(
+            exchange='hello_ex',
+            routing_key='',
+            body=json.dumps(r))
+        try:
+            myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
+        except okerrupdate.OkerrExc as e:
+            log.error("okerr update error: {}".format(str(e)))
+
+
+    channel = get_rmq_channel(args)
+    set_machine_info(args)
+
+    op = okerrupdate.OkerrProject()
+    myindicator = op.indicator("sensor:{}".format(args.name.replace('@','_')), method='heartbeat')
+
+    channel.exchange_declare(exchange='hello_ex', exchange_type='fanout')
+
+
+
+    master_queues = list()
+
+    for qname in machine_info['qlist']:
+        channel.queue_declare(queue='tasks:' + qname, auto_delete=True)
+        master_queues.append('tasks:' + qname)
+
+        #channel.basic_consume(
+        #    queue='tasksq:'+qname, on_message_callback=callback_ctl, auto_ack=True)
+
+
+    try:
+        # Do not use tasksq:any for singleprocess
+        # channel.queue_declare(queue='tasksq:any', auto_delete=True)
+        channel.queue_declare(queue=machine_info['ctlq'], exclusive=True)
+        # master_queues.append('tasksq:any')
+        master_queues.append(machine_info['ctlq'])
+    except Exception as e:
+        print("MAIN FAILED TO DECLARE QUEUES, QUIT. {}: {}". format(type(e), str(e)))
+        master_exit(1)
+
+    log.info("started sensor {}".format(args.name))
+    try:
+        while True:
+            try:
+                hello(channel, myindicator)
+                rmq_process(master_queues, channel, callback_regular_task, timeout=10)
+            except pika.exceptions.AMQPError as e:
+                print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
+                # exit for restart
+                print("Exit master pid {}".format(os.getpid()))
+                sys.exit(1)
+
+            except Exception as e:
+                log.error("MAIN LOOP exception ({}): {}".format(type(e), str(e)))
+                sys.exit(1)
+
+        # channel.start_consuming()
+    except KeyboardInterrupt as e:
+        log.error("Exit because of {}".format(e))
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
 def main():
     global log
     global channel
@@ -472,6 +561,7 @@ def main():
     g.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose mode')
     g.add_argument('-s', '--hello-sleep', type=int, default=10, help='sleep time between hello runs')
     g.add_argument('-n', type=int, default=10, help='number of worker processes')
+    g.add_argument('--oneprocess', default=bool(os.getenv('SENSOR_ONEPROCESS')), action='store_true', help='work as one process')
 
 
     g = parser.add_argument_group('RabbitMQ options')
@@ -515,6 +605,10 @@ def main():
         log.setLevel(logging.INFO)
 
 
+    #
+    # manual mode
+    #
+
     if args.manual:
 
         data = dict(textid='_sensor', name='_manual', cm=args.manual[0], args=dict())
@@ -533,6 +627,20 @@ def main():
         sys.exit(0)
 
     sanity_check(args)
+
+    #
+    # one-process mode
+    #
+
+    if args.oneprocess:
+        print("Run in one-process mode")
+        oneprocess(args)
+        sys.exit(0)
+
+
+    #
+    # default mode
+    #
 
     hello_process = Process(target=hello_loop, args=())
     hello_process.start()
