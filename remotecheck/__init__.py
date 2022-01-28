@@ -620,7 +620,7 @@ class Check(object):
 
         if r:
             self.status = "OK"
-            self.details = "{:.3} ms".format(r)
+            self.details = f"{r*1000:.2f} ms"
         else:
             self.status = "ERR"
             self.details = "Ping failed"
