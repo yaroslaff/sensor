@@ -613,6 +613,7 @@ class Check(object):
         try:
             # r = pyping.ping(self.args["host"])
             r = ping3.ping(self.args['host'])
+            log.info(f"ping host: {self.args['host']} r: {r!r}")
         except Exception as e:
             self.status = "ERR"
             self.details = str(e)
