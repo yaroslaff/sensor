@@ -579,7 +579,7 @@ def main():
                    help='CA cert PEM file: {}'.format(def_capem))
 
     g = parser.add_argument_group('Debugging/development')
-    g.add_argument('--manual', default=list(), nargs='+',
+    g.add_argument('--manual', default=list(), nargs='+', metavar=('CM','ARG'),
                    help='Run manual check, example: --manual httpstatus url=http://okerr.com status=200')
 
 

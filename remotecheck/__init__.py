@@ -344,6 +344,7 @@ class Check(object):
                 self.msgtags['CHECKED']=1
         else:
             print("ERROR !!! dont know how to handle", repr(self.cm))
+            print(f"Known actions: {' '.join(self.actions)}")
             sys.exit(1)        
 
     def action_httpstatus(self):
@@ -515,7 +516,7 @@ class Check(object):
                 ips = list()
                 my_resolver = dns.resolver.Resolver()
                 try:
-                    answer = my_resolver.query(host, 'a')
+                    answer = my_resolver.resolve(host, 'a')
                     for rr in answer.rrset:
                         ips.append(rr.address)
                 except DNSException:
@@ -772,14 +773,13 @@ class Check(object):
     def action_dns(self):
         host = self.args.get("host")
         qtype = self.args.get("type")
-        options = self.args.get("options")
+        options = self.args.get("options", "")
         value = self.args.get("value")
         
 
         resolver = dns.resolver.Resolver()
         resolver.search = None    
         
-
         try:
             
             # DNSBL part
@@ -797,7 +797,7 @@ class Check(object):
                 qhost = '.'.join(reversed(ip4.split('.'))) + '.'+blsuffix
                 
                 try:
-                    answers = resolver.query(qhost, 'A')
+                    answers = resolver.resolve(qhost, 'A')
                 except dns.resolver.NXDOMAIN:
                     # great! not found in blacklist
                     self.status = "OK"
@@ -807,7 +807,7 @@ class Check(object):
                 # bad. we are in list!                
                 self.set_arg('value', str(answers[0]))
                 self.status = "ERR"
-                self.details = str(resolver.query(qhost, 'TXT')[0])
+                self.details = str(resolver.resolve(qhost, 'TXT')[0])
                 return
 
         
@@ -816,12 +816,12 @@ class Check(object):
                 host = dns.reversename.from_address(host)
                 qtype = 'PTR'
 
-            answers = resolver.query(host, qtype)
+            answers = resolver.resolve(host, qtype)
             dnsstr = ' '.join(sorted( str(a) for a in answers ))
                     
             # initialization?
             if value == '' and 'init' in options:
-                self.set_arg("value",dnsstr)
+                self.set_arg("value", dnsstr)
                 self.status = "OK"
                 self.details = "init: {}".format(dnsstr)            
                 return
@@ -835,7 +835,7 @@ class Check(object):
             if 'dynamic' in options:
                 self.status = "OK"
                 self.details = "new: {}".format(dnsstr)
-                self.set_arg("value",dnsstr)
+                self.set_arg("value", dnsstr)
                 self.alert("{} > {}".format(value, dnsstr))
                 return
             
