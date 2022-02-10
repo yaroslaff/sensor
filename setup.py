@@ -10,7 +10,7 @@ def read(filename):
 
 setup(
     name='okerrsensor',
-    version='0.0.53',
+    version='0.0.54',
     packages=['remotecheck'],
     scripts=['sensor.py'],
 
@@ -32,7 +32,7 @@ setup(
         'dnspython',
         'ping3',
         'python-dotenv',
-        'adns @ git+https://github.com/trolldbois/python3-adns/'
+        'async-dnsbl-client'
     ],
     data_files=[
         ('okerrsensor', ['contrib/okerr-sensor.service']),

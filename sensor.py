@@ -268,6 +268,7 @@ def callback_regular_task(ch, method, properties, body):
 
 
     name = '{}@{}'.format(data.get('name','???'), data.get('textid','???'))
+    log.info(f"pid {os.getpid()} will do {name} (")
     setproctitle('sensor.process {}'.format(name))
     log.debug('will process {}'.format(name))
 

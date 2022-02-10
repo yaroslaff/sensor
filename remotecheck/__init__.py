@@ -14,93 +14,23 @@ from dns.exception import DNSException
 import ping3
 import re
 import time
-import ADNS
 import string
 import urllib.parse
 import shlex
 import select
 import traceback
 import argparse
+import asyncio
 
 import urllib3
 urllib3.disable_warnings()
+
+import async_dnsbl_client 
 
 if __name__ == '__main__':
     from remotecheck.forcedip import ForcedIPHTTPSAdapter
 else:
     from .forcedip import ForcedIPHTTPSAdapter
-
-### from myutils import forceunicode
-
-class DNSBL:
-
-    """A class for defining various DNS-based blacklists."""
-
-    def __init__(self, name, zone, URL='', results=None):
-        """Create a DNS blacklist name, based on the given zone.
-        If presently, URL is a template that produces a link
-        back to information for a given address. results
-        should map returned addresses to list codes."""
-
-        self.name = name
-        self.zone = zone
-        self.URL = URL
-        self.results = {}
-        if results:
-            for result, name in results.items(): self.result(result, name)
-
-    def result(self, result, name):
-        """Add a possible result set."""
-        self.results[result] = name
-
-    def getURL(self, ip):
-        """Return a URL to information on the list of ip on this
-        blacklist."""
-        return self.URL.format(ip)
-    
-
-class DNSBLQueryEngine(ADNS.QueryEngine):
-
-    def __init__(self, s=None, blacklists=None):
-        ADNS.QueryEngine.__init__(self, s)
-        self.blacklists = {}
-        self.dnsbl_results = {}
-        if blacklists:
-            for l in blacklists: self.blacklist(l)
-            
-    def blacklist(self, dnsbl):
-        """Add a DNSBL."""
-        self.blacklists[dnsbl.name] = dnsbl
-        
-    def submit_dnsbl(self, qname):
-        from adns import rr
-        for l, d in self.blacklists.items():
-            self.dnsbl_results[qname] = []
-            self.submit_reverse_any(qname, d.zone, rr.A,
-                                    callback=self.dnsbl_callback,
-                                    extra=l)
-
-    def dnsbl_callback(self, answer, qname, rr, flags, l):
-
-        if not answer[0]:
-            for addr in answer[3]:
-                #self.dnsbl_results[qname].append( 
-                #    self.blacklists[l].results.get(addr, "%s-%s"%(l,addr))
-                #    )
-                
-                #print "addr:",addr
-                #print "qname:", qname
-                #print "rr:", rr
-                #print "l:", l
-                #print "answer:", answer
-                
-                # res = "%s=%s" % (l, addr)
-                res = rr
-                
-                self.dnsbl_results[qname].append( (
-                    self.blacklists[l].results.get(addr, res),
-                    self.blacklists[l].getURL(qname)) )
-
 
 
 class Check(object):
@@ -861,126 +791,20 @@ class Check(object):
         skip = self.args.get("skip", '')
         extra = self.args.get("extra", '')
 
+
+        dnsbl_zones = async_dnsbl_client.dnsbl_zones
+
         skip_dnsbl = list(filter(None, re.split('[, ]+', skip)))
         extra_dnsbl = filter(None, re.split('[, ]+', extra))
 
-        resolver = dns.resolver.Resolver()
-        resolver.search = None    
+        checked = len(dnsbl_zones)
 
-        ips = list()
+        for bl in skip_dnsbl:
+            dnsbl_zones.remove(bl)
         
-        try:            
-            socket.inet_aton(host)
-            ips.append(host)
-        except (socket.error, OSError) as e:
-            try:
-                # old version
-                # answers = resolver.query(host, 'A')
-                answers = resolver.resolve(host, 'A')
-                assert(answers is not None)
+        dnsbl_zones.extend(extra_dnsbl)
 
-                for ans in answers:
-                    ips.append(str(ans))
-                
-            except dns.resolver.NXDOMAIN:                
-                self.status = "ERR"
-                self.details = "NXDOMAIN {}".format(host)                
-                return
-
-            except dns.resolver.Timeout:                
-                self.status = "ERR"
-                self.details = "TIMEOUT {}".format(host)                
-                return
-
-
-        
-        bl_zones = [
-            'cbl.abuseat.org',
-            'dnsbl.sorbs.net',
-            'dul.dnsbl.sorbs.net',
-            'smtp.dnsbl.sorbs.net',
-            'spam.dnsbl.sorbs.net',
-            'zombie.dnsbl.sorbs.net',
-            'sbl.spamhaus.org',
-            'zen.spamhaus.org',
-            'psbl.surriel.com',
-            'rbl.spamlab.com',
-            'noptr.spamrats.com', 
-            'cbl.anti-spam.org.cn', 
-            'dnsbl.inps.de', 
-            'httpbl.abuse.ch', 
-            'short.rbl.jp', 
-            'spamrbl.imp.ch', 
-            'virbl.bit.nl', 
-            'dsn.rfc-ignorant.org', 
-            'opm.tornevall.org', 
-            'multi.surbl.org', 
-            'tor.dan.me.uk', 
-            'relays.mail-abuse.org', 
-            'rbl-plus.mail-abuse.org', 
-            'access.redhawk.org', 
-            'rbl.interserver.net', 
-            'bogons.cymru.com', 
-            'truncate.gbudb.net', 
-            'bl.spamcop.net', 
-            'b.barracudacentral.org', 
-            'http.dnsbl.sorbs.net', 
-            'misc.dnsbl.sorbs.net', 
-            'socks.dnsbl.sorbs.net', 
-            'web.dnsbl.sorbs.net', 
-            'pbl.spamhaus.org', 
-            'xbl.spamhaus.org', 
-            'ubl.unsubscore.com', 
-            'dyna.spamrats.com', 
-            'spam.spamrats.com', 
-            'cdl.anti-spam.org.cn', 
-            'drone.abuse.ch', 
-            'korea.services.net', 
-            'virus.rbl.jp', 
-            'wormrbl.imp.ch', 
-            'rbl.suresupport.com', 
-            'spamguard.leadmon.net', 
-            'netblock.pedantic.org', 
-            'ix.dnsbl.manitu.net', 
-            'rbl.efnetrbl.org', 
-            'blackholes.mail-abuse.org', 
-            'dnsbl.dronebl.org', 
-            'db.wpbl.info', 
-            'query.senderbase.org', 
-            'csi.cloudmark.com',
-
-            # 'bl.spamcannibal.org', 
-            # 'combined.njabl.org', 
-            # 'dnsbl.njabl.org',
-
-        ]
-        
-                
-        blacklists = list()
-
-        checked = 0
-        
-        for bl in bl_zones:
-            if not bl in skip_dnsbl:
-                blacklists.append(DNSBL(name=bl, zone=bl))
-                checked += 1
-            else:
-                pass
-
-        for bl in extra_dnsbl:
-            blacklists.append(DNSBL(name=bl, zone=bl))
-            checked += 1
-
-        s = DNSBLQueryEngine(blacklists=blacklists)
-        for ip in ips:
-            s.submit_dnsbl(ip)            
-        s.finish()
-        listed = s.dnsbl_results
-        
-        for k, v in listed.items():
-            hits = []
-            for l, url in v: 
-                hits.append(l)
+        hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones))
 
         if hits:
             self.status = "ERR"
