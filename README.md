@@ -3,7 +3,6 @@ Okerr remote network sensor
 # Install
 
 ~~~
-apt install libadns1-dev
 pip3 install git+https://github.com/yaroslaff/sensor/
 ~~~
 
