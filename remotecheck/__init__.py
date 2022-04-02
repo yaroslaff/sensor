@@ -800,7 +800,11 @@ class Check(object):
         checked = len(dnsbl_zones)
 
         for bl in skip_dnsbl:
-            dnsbl_zones.remove(bl)
+            try:
+                dnsbl_zones.remove(bl)
+            except ValueError:
+                self.status = "ERR"
+                self.details = f"Zone {bl} not available. Maybe mistype?"
         
         dnsbl_zones.extend(extra_dnsbl)
 
