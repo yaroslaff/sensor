@@ -551,6 +551,20 @@ def main():
     def_rmquser = 'okerr'
     def_rmqpass = 'okerr_default_password'
 
+
+
+    actions_list = [
+            'sslcert',
+            'sha1static',
+            'sha1dynamic',
+            'ping',
+            'httpgrep',
+            'httpstatus',
+            'tcpport',
+            'whois',
+            'dns',
+            'dnsbl']
+
     parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
 
     g = parser.add_argument_group('Location')
@@ -579,8 +593,11 @@ def main():
                    help='CA cert PEM file: {}'.format(def_capem))
 
     g = parser.add_argument_group('Debugging/development')
-    g.add_argument('--manual', default=list(), nargs='+', metavar=('CM','ARG'),
-                   help='Run manual check, example: --manual httpstatus url=http://okerr.com status=200')
+    g.add_argument('--manual', default=list(), nargs='+', metavar=('CheckMethod','ARG'),
+                   help='Run manual check. CheckMethods: {}. Example: --manual httpstatus url=http://okerr.com status=200'.format(' '.join(actions_list)))
+
+
+
 
 
     # {'_task': 'tproc.indicator', 'id': 20088699, 'textid': 'okrrdm', 'name': 'медуза', 'cm': 'httpstatus', 

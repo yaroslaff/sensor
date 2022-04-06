@@ -351,18 +351,18 @@ class Check(object):
             sock.settimeout(5)
             sock.connect((addr, port))
             
+
             # !!! TODO FIXME check with wrong hostname (throws exception)
             ctx = ssl.create_default_context()
+
             sslsock = ctx.wrap_socket(
                 sock,
                 server_hostname = host,
-                )
-                    
+                )            
             cert = sslsock.getpeercert()
 
-
             ssl.match_hostname(cert,host)
-            nafterstr = cert['notAfter']                  
+            nafterstr = cert['notAfter']
             cert_nafter = datetime.datetime.strptime(nafterstr, ssl_date_fmt)
             
             sock.close()
@@ -421,7 +421,7 @@ class Check(object):
 
         try:
             
-            if 'noverify' or 'ssl_noverify' in o:
+            if 'noverify' in o or 'ssl_noverify' in o:
                 cert_nafter = nafter_noverify(addr, host, port, options)
             else:
                 cert_nafter = nafter_verify(addr, host, port, options)
@@ -446,7 +446,7 @@ class Check(object):
                 ips = list()
                 my_resolver = dns.resolver.Resolver()
                 try:
-                    answer = my_resolver.resolve(host, 'a')
+                    answer = my_resolver.query(host, 'a')
                     for rr in answer.rrset:
                         ips.append(rr.address)
                 except DNSException:
