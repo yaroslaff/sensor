@@ -2,7 +2,7 @@
 
 import os
 from setuptools import setup
-
+from remotecheck import version
 
 def read(filename):
     return open(os.path.join(os.path.dirname(__file__), filename)).read()
@@ -10,7 +10,7 @@ def read(filename):
 
 setup(
     name='okerrsensor',
-    version='0.0.56',
+    version=version,
     packages=['remotecheck'],
     scripts=['sensor.py'],
 

@@ -27,6 +27,8 @@ urllib3.disable_warnings()
 
 import async_dnsbl_client 
 
+version = '0.0.57'
+
 if __name__ == '__main__':
     from remotecheck.forcedip import ForcedIPHTTPSAdapter
 else:

@@ -18,7 +18,7 @@ from multiprocessing import Process, current_process, active_children
 from setproctitle import setproctitle
 from dotenv import load_dotenv
 
-from remotecheck import Check
+from remotecheck import Check, version
 import okerrupdate
 
 
@@ -344,6 +344,7 @@ def hello_loop():
                 routing_key='',
                 body=json.dumps(r))
             try:
+                log.info('ZZZZ hello.loop update {}'.format(myindicator))
                 myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
             except okerrupdate.OkerrExc as e:
                 log.error("okerr update error: {}".format(str(e)))
@@ -459,6 +460,7 @@ def oneprocess(args):
             routing_key='',
             body=json.dumps(r))
         try:
+            log.info("ZZZ oneprocess.hello update: {}".format(myindicator))
             myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
         except okerrupdate.OkerrExc as e:
             log.error("okerr update error: {}".format(str(e)))
