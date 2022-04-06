@@ -345,7 +345,7 @@ def hello_loop():
                 body=json.dumps(r))
             try:
                 log.info('ZZZZ hello.loop update {}'.format(myindicator))
-                myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
+                myindicator.update('OK', 'v: {} up: {}'.format(version, dhms(time.time() - started)))
             except okerrupdate.OkerrExc as e:
                 log.error("okerr update error: {}".format(str(e)))
             #time.sleep(args.sleep)
@@ -460,8 +460,7 @@ def oneprocess(args):
             routing_key='',
             body=json.dumps(r))
         try:
-            log.info("ZZZ oneprocess.hello update: {}".format(myindicator))
-            myindicator.update('OK', 'Uptime: {}'.format(dhms(time.time() - started)))
+            myindicator.update('OK', 'v: {} up: {} '.format(version, dhms(time.time() - started)))
         except okerrupdate.OkerrExc as e:
             log.error("okerr update error: {}".format(str(e)))
 
