@@ -27,7 +27,7 @@ urllib3.disable_warnings()
 
 import async_dnsbl_client 
 
-version = '0.0.58'
+version = '0.0.59'
 
 if __name__ == '__main__':
     from remotecheck.forcedip import ForcedIPHTTPSAdapter
@@ -37,7 +37,7 @@ else:
 
 class Check(object):
 
-    user_agent = 'OkerrSensor/0.1'
+    user_agent = 'OkerrSensor/{}'.format(version)
 
     def __init__(self, data=None):
         self.status = None
