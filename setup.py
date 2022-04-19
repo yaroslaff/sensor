@@ -2,7 +2,7 @@
 
 import os
 from setuptools import setup
-from remotecheck import version
+from remotecheck.version import version
 
 def read(filename):
     return open(os.path.join(os.path.dirname(__file__), filename)).read()
