@@ -18,7 +18,7 @@ from multiprocessing import Process, current_process, active_children
 from setproctitle import setproctitle
 from dotenv import load_dotenv
 
-from remotecheck import version
+from remotecheck.version import version
 import okerrupdate
 
 from remotecheck.check import Check
