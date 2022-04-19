@@ -32,6 +32,7 @@ if __name__ == '__main__':
 else:
     from .forcedip import ForcedIPHTTPSAdapter
 
+from .version import version
 
 class Check(object):
 
