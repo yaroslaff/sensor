@@ -8,6 +8,7 @@ import requests
 import logging
 import subprocess
 import whois
+import aiodns
 import dns.resolver
 from dns.exception import DNSException
 #import pyping
@@ -809,8 +810,14 @@ class Check(object):
         
         dnsbl_zones.extend(extra_dnsbl)
 
-        hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones))
-
+        try:
+            hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones))
+        except aiodns.error.DNSError:
+            log.warning(f"Failed to resolve {host} in dnsbl")
+            self.status = "ERR"
+            self.details = f"Failed to resolve {host}"
+            return
+            
         if hits:
             self.status = "ERR"
             self.details = "{} (total: {}/{})".format(', '.join(hits[:3]), len(hits), checked)
