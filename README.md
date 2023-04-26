@@ -37,6 +37,9 @@ systemctl enable okerr-sensor
 systemctl start okerr-sensor
 ~~~
 
+# Run on low-memory machines
+Use `--oneprocess` option, or set env variable `SENSOR_ONEPROCESS` to any non-empty value (e.g. in `/etc/okerr/env/sensor`)
+
 # Build dist from source
 ~~~
 git clone git@github.com:yaroslaff/sensor.git
