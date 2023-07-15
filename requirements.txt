@@ -8,7 +8,7 @@ okerrupdate
 certifi==2022.12.7
 cffi==1.13.2
 chardet==3.0.4
-cryptography==41.0.0
+cryptography==41.0.2
 dnspython==1.16.0
 idna==2.8
 pika==1.1.0
