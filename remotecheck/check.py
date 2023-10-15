@@ -812,7 +812,7 @@ class Check(object):
 
         try:
             hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones))
-        except aiodns.error.DNSError:
+        except (aiodns.error.DNSError, OSError):
             log.warning(f"Failed to resolve {host} in dnsbl")
             self.status = "ERR"
             self.details = f"Failed to resolve {host}"
