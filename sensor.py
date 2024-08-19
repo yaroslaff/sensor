@@ -346,7 +346,7 @@ def hello_loop():
                 routing_key='',
                 body=json.dumps(r))
             try:
-                log.info('ZZZZ hello.loop update {}'.format(myindicator))
+                # log.info('ZZZZ hello.loop update {}'.format(myindicator))
                 myindicator.update('OK', 'v: {} up: {}'.format(version, dhms(time.time() - started)))
             except okerrupdate.OkerrExc as e:
                 log.error("okerr update error: {}".format(str(e)))
