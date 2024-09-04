@@ -6,6 +6,7 @@ Okerr remote network sensor
 pip3 install git+https://github.com/yaroslaff/sensor/
 ~~~
 
+
 configure `/etc/okerrclient.conf`
 
 Prepare env config file:
