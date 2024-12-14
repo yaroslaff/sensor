@@ -138,7 +138,8 @@ class ForcedIPHTTPSConnectionPool(HTTPSConnectionPool):
             conn = ForcedIPHTTPSConnection(
                 host=actual_host, port=actual_port,
                 timeout=self.timeout.connect_timeout,
-                strict=self.strict, **self.conn_kw)
+                # strict=self.strict, 
+                **self.conn_kw)
             pc = self._prepare_conn(conn)
             return pc
 
