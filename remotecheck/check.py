@@ -34,11 +34,11 @@ import async_dnsbl_client
 #    from .forcedip import ForcedIPHTTPSAdapter                            
 from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 
-from .version import version
+from .version import __version__
 
 class Check(object):
 
-    user_agent = 'OkerrSensor/{}'.format(version)
+    user_agent = 'OkerrSensor/{}'.format(__version__)
 
     def __init__(self, data=None):
         self.status = None

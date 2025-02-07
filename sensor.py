@@ -18,7 +18,7 @@ from multiprocessing import Process, current_process, active_children
 from setproctitle import setproctitle
 from dotenv import load_dotenv
 
-from remotecheck.version import version
+from remotecheck.version import __version__
 import okerrupdate
 
 from remotecheck.check import Check
@@ -347,7 +347,7 @@ def hello_loop():
                 body=json.dumps(r))
             try:
                 # log.info('ZZZZ hello.loop update {}'.format(myindicator))
-                myindicator.update('OK', 'v: {} up: {}'.format(version, dhms(time.time() - started)))
+                myindicator.update('OK', 'v: {} up: {}'.format(__version__, dhms(time.time() - started)))
             except okerrupdate.OkerrExc as e:
                 log.error("okerr update error: {}".format(str(e)))
             #time.sleep(args.sleep)
@@ -462,7 +462,7 @@ def oneprocess(args):
             routing_key='',
             body=json.dumps(r))
         try:
-            myindicator.update('OK', 'v: {} up: {} '.format(version, dhms(time.time() - started)))
+            myindicator.update('OK', 'v: {} up: {} '.format(__version__, dhms(time.time() - started)))
         except okerrupdate.OkerrExc as e:
             log.error("okerr update error: {}".format(str(e)))
 
@@ -568,7 +568,7 @@ def main():
             'dns',
             'dnsbl']
 
-    parser = argparse.ArgumentParser(description='okerr indicator MQ tasks client')
+    parser = argparse.ArgumentParser(description=f'okerr indicator MQ tasks client ver {__version__}')
 
     g = parser.add_argument_group('Location')
     g.add_argument('--name', default=os.getenv('SENSOR_NAME', 'noname@nowhere.tld'))
@@ -716,7 +716,7 @@ def main():
     #channel.basic_consume(
     #    queue='tasksq:any', on_message_callback=callback_ctl, auto_ack=True)
 
-    log.info("started sensor {}".format(args.name))
+    log.info(f"started sensor {args.name} ver {__version__}")
     try:
         while True:
             master_watchdog()
