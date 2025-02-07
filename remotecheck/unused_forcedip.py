@@ -68,7 +68,7 @@ response = session.get(
 # if it's <2.7.9 decide to use the old "http://$IP/ technique. If Python is
 # >2.7.9 and the adapter doesn't work, unfortunately, there's nothing that can
 # be done :(
-from distutils.version import StrictVersion
+# from packaging.version import Version
 from socket import error as SocketError, timeout as SocketTimeout
 
 import requests
@@ -78,6 +78,7 @@ from requests.packages.urllib3.poolmanager import (
         PoolManager, HTTPSConnectionPool,
 )
 from requests.packages.urllib3.exceptions import ConnectTimeoutError
+
 try:
     # For requests 2.9.x
     from requests.packages.urllib3.util import connection
@@ -89,13 +90,7 @@ except ImportError:
 # Requests older than 2.4.0's VerifiedHHTPSConnection is broken and doesn't
 # properly use _new_conn. On these versions, use UnverifiedHTTPSConnection
 # instead.
-if StrictVersion(requests.__version__) < StrictVersion('2.4.0'):
-    from requests.packages.urllib3.connection import (
-        UnverifiedHTTPSConnection as HTTPSConnection
-    )
-else:
-    from requests.packages.urllib3.connection import HTTPSConnection
-
+from requests.packages.urllib3.connection import HTTPSConnection
 
 class ForcedIPHTTPSAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
@@ -113,39 +108,10 @@ class ForcedIPHTTPSPoolManager(PoolManager):
         super(ForcedIPHTTPSPoolManager, self).__init__(*args, **kwargs)
 
     def _new_pool(self, scheme, host, port, request_context=None):
-            kwargs = self.connection_pool_kw
-            assert scheme == 'https'
-            kwargs['dest_ip'] = self.dest_ip
-            return ForcedIPHTTPSConnectionPool(host, port, **kwargs)
-
-
-class ForcedIPHTTPSConnectionPool(HTTPSConnectionPool):
-    def __init__(self, *args, **kwargs):
-        self.dest_ip = kwargs.pop('dest_ip', None)
-        super(ForcedIPHTTPSConnectionPool, self).__init__(*args, **kwargs)
-
-    def _new_conn(self):
-            self.num_connections += 1
-
-            actual_host = self.host
-            actual_port = self.port
-            if self.proxy is not None:
-                actual_host = self.proxy.host
-                actual_port = self.proxy.port
-
-            self.conn_kw = getattr(self, 'conn_kw', {})
-            self.conn_kw['dest_ip'] = self.dest_ip
-            conn = ForcedIPHTTPSConnection(
-                host=actual_host, port=actual_port,
-                timeout=self.timeout.connect_timeout,
-                # strict=self.strict, 
-                **self.conn_kw)
-            pc = self._prepare_conn(conn)
-            return pc
-
-    def __str__(self):
-        return '%s(host=%r, port=%r, dest_ip=%s)' % (
-            type(self).__name__, self.host, self.port, self.dest_ip)
+        assert scheme == 'https'
+        kwargs = self.connection_pool_kw.copy()
+        kwargs['dest_ip'] = self.dest_ip
+        return ForcedIPHTTPSConnectionPool(host, port, **kwargs)
 
 
 class ForcedIPHTTPSConnection(HTTPSConnection, object):
@@ -170,10 +136,29 @@ class ForcedIPHTTPSConnection(HTTPSConnection, object):
         except SocketTimeout as e:
             raise ConnectTimeoutError(
                 self, "Connection to %s timed out. (connect timeout=%s)" %
-                (self.host, self.timeout))
+                      (self.host, self.timeout))
 
         except SocketError as e:
             raise NewConnectionError(
                 self, "Failed to establish a new connection: %s" % e)
 
         return conn
+
+
+class ForcedIPHTTPSConnectionPool(HTTPSConnectionPool):
+    def __init__(self, *args, **kwargs):
+        self.dest_ip = kwargs.pop('dest_ip', None)
+        super(ForcedIPHTTPSConnectionPool, self).__init__(*args, **kwargs)
+
+    def _new_conn(self) -> ForcedIPHTTPSConnection:
+        """
+        Return a fresh :class:`urllib3.connection.HTTPConnection`.
+        """
+        self.ConnectionCls = ForcedIPHTTPSConnection
+        conn = super()._new_conn()
+        conn.dest_ip = self.dest_ip
+        return conn
+
+    def __str__(self):
+        return '%s(host=%r, port=%r, dest_ip=%s)' % (
+            type(self).__name__, self.host, self.port, self.dest_ip)

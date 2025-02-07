@@ -28,10 +28,11 @@ urllib3.disable_warnings()
 
 import async_dnsbl_client 
 
-if __name__ == '__main__':
-    from remotecheck.forcedip import ForcedIPHTTPSAdapter
-else:
-    from .forcedip import ForcedIPHTTPSAdapter
+#if __name__ == '__main__':
+#    from remotecheck.forcedip import ForcedIPHTTPSAdapter
+#else:
+#    from .forcedip import ForcedIPHTTPSAdapter                            
+from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 
 from .version import version
 
@@ -228,8 +229,7 @@ class Check(object):
             url_host = url_parsed.netloc.split(':')[0]
         else:
             url_host = url_parsed.netloc
-        
-        
+    
         o = dict()
         for s in shlex.split(options):
             if '=' in s:
@@ -242,18 +242,21 @@ class Check(object):
             verify = False
         
         session = requests.Session()
+        params = dict()
         if 'addr' in o:
-        
             if url_scheme == 'https':
+                # https
                 session.mount(url, ForcedIPHTTPSAdapter(dest_ip=o['addr']))
             else:
-                # http                
+                # http
                 url_changed = url_parsed._replace(netloc = o['addr'])
                 headers['Host'] = url_host
                 url = urllib.parse.urlunparse(url_changed)
-        
+
         r = session.get(
-            url, verify=verify, headers=headers, allow_redirects=allow_redirects, timeout=3)
+            url, verify=verify, headers=headers, allow_redirects=allow_redirects, timeout=3, 
+            params=params)
+        print(r.text)
         return r
 
     def check(self):

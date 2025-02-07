@@ -5,4 +5,4 @@ dist/
 okerrsensor.egg-info/
 .env
 .venv
-
+.local

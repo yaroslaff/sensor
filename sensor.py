@@ -546,8 +546,8 @@ def main():
     conf_file = '/etc/okerr/okerrupdate'
     load_dotenv(dotenv_path=conf_file)
 
-    def_pem = '/etc/okerr/ssl/client.pem'
-    def_capem = '/etc/okerr/ssl/ca.pem'
+    def_pem = os.getenv('SENSOR_PEM','/etc/okerr/ssl/client.pem')
+    def_capem = os.getenv('SENSOR_CAPEM', '/etc/okerr/ssl/ca.pem')
 
     def_rmqhost = 'localhost'
     def_rmqvhost = 'okerr'
