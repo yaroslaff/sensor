@@ -256,7 +256,6 @@ class Check(object):
         r = session.get(
             url, verify=verify, headers=headers, allow_redirects=allow_redirects, timeout=3, 
             params=params)
-        print(r.text)
         return r
 
     def check(self):
