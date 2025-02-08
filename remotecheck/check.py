@@ -12,7 +12,8 @@ import aiodns
 import dns.resolver
 from dns.exception import DNSException
 #import pyping
-import ping3
+# import ping3
+import icmplib
 import re
 import time
 import string
@@ -547,19 +548,18 @@ class Check(object):
 
         try:
             # r = pyping.ping(self.args["host"])
-            r = ping3.ping(self.args['host'])
-            log.info(f"ping host: {self.args['host']} r: {r!r}")
+            # r = ping3.ping(self.args['host'])
+            r = icmplib.ping(self.args['host'], count=3, timeout=2, interval=1)
+            log.info(f"ping host: {self.args['host']} {r.address} avgrtt: {r.avg_rtt!r}")
         except Exception as e:
             self.status = "ERR"
             self.details = str(e)
             return 
 
-        if r:
-            self.status = "OK"
-            self.details = f"{r*1000:.2f} ms"
-        else:
-            self.status = "ERR"
-            self.details = "Ping failed"
+        self.status = "OK" if r.packets_received == r.packets_sent else "ERR"
+        
+        self.details = f"{r.address}: {r.avg_rtt:.2f}ms ({r.packets_received}/{r.packets_sent})"
+
 
         """
         self.details = "{} ({}) rtt: {}/{}/{} lost: {}".format(r.destination, r.destination_ip, r.min_rtt, r.avg_rtt, r.max_rtt, r.packet_lost)

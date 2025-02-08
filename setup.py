@@ -30,7 +30,7 @@ setup(
         'pyOpenSSL',
         'python-whois',
         'dnspython',
-        'ping3',
+        'icmplib',
         'python-dotenv',
         'async-dnsbl-client'
     ],

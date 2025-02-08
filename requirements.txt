@@ -3,7 +3,8 @@
 
 async-dnsbl-client
 python-dotenv
-ping3
+# ping3
+icmplib
 okerrupdate
 certifi>=2024.7.4
 cffi>=1.15.1
