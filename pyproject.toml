@@ -1,0 +1,59 @@
+[build-system]
+# requires = ["setuptools>=42", "wheel"]
+# build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.27.0", "wheel"]
+build-backend = "hatchling.build"
+
+
+
+[project]
+name = "okerrsensor"
+# version = "0.0.1"  # Replace with your actual version or use dynamic versioning
+description = "network sensor for okerr monitoring server"
+dynamic = [ "version" ]
+readme = "README.md"
+requires-python = ">=3"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Yaroslav Polyakov", email = "yaroslaff@gmail.com"},
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License (GPL)",
+]
+
+dependencies = [
+    "okerrupdate",
+    "setproctitle",
+    "pika",
+    "pyOpenSSL",
+    "python-whois",
+    "dnspython",
+    "icmplib",
+    "python-dotenv",
+    "async-dnsbl-client",
+    "pika>=1.1.0",
+    "forcediphttpsadapter"
+]
+
+[project.urls]
+homepage = "https://gitlab.com/yaroslaff/sensor"
+
+[project.scripts]
+sensor = "remotecheck.sensor:main"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["remotecheck"]
+
+[tool.hatch.version]
+# path = 'showcert:showcert/__main__.py'
+path = 'remotecheck/version.py'
+
+[tool.setuptools.data-files]
+okerrsensor = [
+    "contrib/okerr-sensor.service",
+    "contrib/okerr-sensor-venv.service",
+]

@@ -36,6 +36,9 @@ import async_dnsbl_client
 from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 
 from .version import __version__
+from .exceptions import CheckException
+from .tcpport import check_tcpport
+
 
 class Check(object):
 
@@ -570,7 +573,23 @@ class Check(object):
             self.status = "ERR"
         """
 
-    def action_tcpport(self):    
+    def action_tcpport(self):
+        host = self.args["host"]
+        port = int(self.args["port"])
+        substr = self.args["substr"]
+        timeout=2
+
+        try:
+            result = check_tcpport(host=host, port=port, timeout=timeout, substr=substr)
+            self.status = "OK"
+            self.details = result
+        except CheckException as e:
+            self.status = "ERR"
+            self.details = str(e)
+            return
+
+
+    def UNUSED_action_tcpport(self):    
         host = self.args["host"]
         port = int(self.args["port"])
         substr = self.args["substr"]
@@ -578,6 +597,7 @@ class Check(object):
         
         try:
             ip = socket.gethostbyname(host)
+            print("IP: ", ip)
         except socket.gaierror:
             self.status = "ERR"
             self.details = "cannot resolve {}".format(host)

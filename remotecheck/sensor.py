@@ -633,9 +633,14 @@ def main():
 
         data = dict(textid='_sensor', name='_manual', cm=args.manual[0], args=dict())
 
-        for arg in args.manual[1:]:
-            k,v = arg.split('=', 1)
-            data['args'][k]=v
+        try:
+            for arg in args.manual[1:]:
+                k,v = arg.split('=', 1)
+                data['args'][k]=v
+        except ValueError as e:
+            print(f"Bad manual option: {arg}. Use param=value")
+            sys.exit(1)
+
 
         print("REQUEST:\n", json.dumps(data, indent=4),"\n")
         check = Check.from_request(data)
