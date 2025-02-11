@@ -26,6 +26,7 @@ setup(
     install_requires=[
         'okerrupdate',
         'setproctitle',
+        'forcediphttpsadapter',
         'pika',
         'pyOpenSSL',
         'python-whois',
