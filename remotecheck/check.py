@@ -38,6 +38,7 @@ from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 from .version import __version__
 from .exceptions import CheckException
 from .tcpport import check_tcpport
+from .checkargs import checkargs
 
 
 class Check(object):
@@ -262,7 +263,25 @@ class Check(object):
             params=params)
         return r
 
+
+    def check_args(self):
+        
+        try:
+            cargs = checkargs[self.cm]
+        except KeyError:
+            raise CheckException(f"Unknown check {self.cm}")
+
+        for arg in cargs['required']:
+            if arg not in self.args:
+                raise CheckException(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']}{cargs.get('description', '')}")
+
+        
+
+
+
     def check(self):
+
+        self.check_args()
 
         if self.cm in self.actions:
             self.code = None
@@ -284,6 +303,8 @@ class Check(object):
             print("ERROR !!! dont know how to handle", repr(self.cm))
             print(f"Known actions: {' '.join(self.actions)}")
             sys.exit(1)        
+
+
 
     def action_httpstatus(self):
         url = self.args.get("url", 'http://okerr.com/')

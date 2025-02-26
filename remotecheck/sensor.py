@@ -22,6 +22,7 @@ from remotecheck.version import __version__
 import okerrupdate
 
 from remotecheck.check import Check
+from remotecheck.exceptions import CheckException
 
 
 log = None
@@ -644,8 +645,14 @@ def main():
 
         print("REQUEST:\n", json.dumps(data, indent=4),"\n")
         check = Check.from_request(data)
+
         # try/except?
-        check.check()
+        try:
+            check.check()
+        except CheckException as e:
+            print(e, file=sys.stderr)
+            sys.exit(1)
+
         resp = check.response()
         print("RESPONSE:\n", json.dumps(resp, indent=4),"\n")
 

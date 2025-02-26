@@ -49,7 +49,6 @@ sensor = "remotecheck.sensor:main"
 packages = ["remotecheck"]
 
 [tool.hatch.version]
-# path = 'showcert:showcert/__main__.py'
 path = 'remotecheck/version.py'
 
 [tool.setuptools.data-files]
