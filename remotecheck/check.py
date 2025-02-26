@@ -709,7 +709,7 @@ class Check(object):
 
     def action_whois(self):
         domain = self.args["domain"]
-        days = int(self.args["days", "30"])
+        days = int(self.args.get("days", "30"))
 
         try:
             w = whois.whois(domain)
