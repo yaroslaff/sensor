@@ -269,10 +269,12 @@ class Check(object):
         try:
             cargs = checkargs[self.cm]
         except KeyError:
+            log.error(f"Unknown check {self.cm}")
             raise CheckException(f"Unknown check {self.cm}")
 
         for arg in cargs['required']:
             if arg not in self.args:
+                log.error(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']}{cargs.get('description', '')}")
                 raise CheckException(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']}{cargs.get('description', '')}")
 
         
