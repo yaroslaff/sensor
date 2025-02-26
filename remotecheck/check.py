@@ -274,8 +274,8 @@ class Check(object):
 
         for arg in cargs['required']:
             if arg not in self.args:
-                log.error(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']}{cargs.get('description', '')}")
-                raise CheckException(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']}{cargs.get('description', '')}")
+                log.error(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']} {cargs.get('description', '')}")
+                raise CheckException(f"Missing argument {arg!r} for {self.cm}. req: {cargs['required']}  opt: {cargs['optional']} {cargs.get('description', '')}")
 
         
 
