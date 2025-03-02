@@ -8,7 +8,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "okerrsensor"
-# version = "0.0.1"  # Replace with your actual version or use dynamic versioning
 description = "network sensor for okerr monitoring server"
 dynamic = [ "version" ]
 readme = "README.md"
@@ -33,7 +32,7 @@ dependencies = [
     "dnspython",
     "icmplib",
     "python-dotenv",
-    "async-dnsbl-client",
+    "async-dnsbl-client>=0.0.3",
     "pika>=1.1.0",
     "forcediphttpsadapter"
 ]

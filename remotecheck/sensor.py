@@ -23,6 +23,7 @@ import okerrupdate
 
 from remotecheck.check import Check
 from remotecheck.exceptions import CheckException
+from remotecheck.settings import settings
 
 
 log = None

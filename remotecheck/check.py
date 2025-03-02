@@ -39,6 +39,7 @@ from .version import __version__
 from .exceptions import CheckException
 from .tcpport import check_tcpport
 from .checkargs import checkargs
+from .settings import settings
 
 
 class Check(object):
@@ -854,9 +855,9 @@ class Check(object):
                 self.details = f"Zone {bl} not available. Maybe mistype?"
         
         dnsbl_zones.extend(extra_dnsbl)
-
+        
         try:
-            hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones))
+            hits = asyncio.run(async_dnsbl_client.dnsbl(host, zonelist=dnsbl_zones, nameserver=settings.nameserver))
         except (aiodns.error.DNSError, OSError):
             log.warning(f"Failed to resolve {host} in dnsbl")
             self.status = "ERR"
