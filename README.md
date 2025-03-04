@@ -2,10 +2,13 @@ Okerr remote network sensor
 
 # Install
 
-~~~
+~~~shell
 PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin install git+https://github.com/yaroslaff/sensor/
 
 PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx reinstall okerrsensor
+
+# or simpler
+pipx install git+https://github.com/yaroslaff/sensor/
 ~~~
 
 or (old way):
