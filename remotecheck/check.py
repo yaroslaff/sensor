@@ -196,7 +196,8 @@ class Check(object):
     def alert(self, msg):
         self.alerts.append(msg)
 
-    def checkfilter(self, checkfilter):
+    def UNUSED_checkfilter(self, checkfilter):
+
         try:
             if 'nosmtp' in checkfilter:
                 ports = [25, 465, 587]
