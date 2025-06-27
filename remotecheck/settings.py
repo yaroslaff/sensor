@@ -7,8 +7,7 @@ class Settings:
         self.reinit()
     
     def reinit(self):
-        self.nameservers = None
-        if os.getenv("SENSOR_NAMESERVER"):
-            self.nameserver = os.getenv("SENSOR_NAMESERVER")
+        self.nameserver = os.getenv("SENSOR_NAMESERVER")        
+        self.checkfilter = os.getenv("SENSOR_CHECKFILTER", "")
 
 settings = Settings()

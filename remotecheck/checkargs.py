@@ -26,8 +26,8 @@ checkargs = {
     },
 
     "tcpport": {
-        "required":['host'],
-        "optional": ['port', 'substr']
+        "required":['host', 'port'],
+        "optional": ['substr']
     },
 
     "httpgrep": {

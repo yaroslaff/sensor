@@ -196,9 +196,12 @@ class Check(object):
     def alert(self, msg):
         self.alerts.append(msg)
 
-    def UNUSED_checkfilter(self, checkfilter):
-
+    def checkfilter(self, checkfilter):
         try:
+            if 'notcpport' in checkfilter:
+                self.code = 501
+                self.msgtags["notcpport"] = 1
+                return True
             if 'nosmtp' in checkfilter:
                 ports = [25, 465, 587]
                 if self.cm in ['sslcert', 'tcpport'] and int(self.args['port']) in ports:
@@ -286,6 +289,9 @@ class Check(object):
     def check(self):
 
         self.check_args()
+
+        if self.checkfilter(settings.checkfilter):
+            return
 
         if self.cm in self.actions:
             self.code = None
@@ -601,7 +607,7 @@ class Check(object):
     def action_tcpport(self):
         host = self.args["host"]
         port = int(self.args["port"])
-        substr = self.args["substr"]
+        substr = self.args.get("substr")
         timeout=2
 
         try:
