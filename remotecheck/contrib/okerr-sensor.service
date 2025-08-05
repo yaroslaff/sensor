@@ -1,3 +1,6 @@
+# as root:
+# sensor --systemd > /etc/systemd/system/okerr-sensor.service
+
 [Unit]
 Description=okerr network sensor
 After=syslog.target
@@ -6,7 +9,7 @@ After=okerr.service
 
 [Service]
 Type=simple
-ExecStart=%VENV%/bin/python3 %VENV%/bin/sensor.py
+ExecStart=%PATH%
 EnvironmentFile=/etc/okerr/env/sensor
 StandardOutput=append:/var/log/okerr/sensor-out.log
 StandardError=append:/var/log/okerr/sensor-err.log

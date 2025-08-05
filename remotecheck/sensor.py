@@ -551,10 +551,8 @@ def testrmq(args: argparse.Namespace):
 
 
 def dump_systemd():
-    pkg_dir = Path(__file__).parent.parent
+    pkg_dir = Path(__file__).parent
     tpl_file = pkg_dir / 'contrib' / 'okerr-sensor.service'
-    # print(tpl_file)
-    # print(sys.argv[0])
     tpl = open(tpl_file).read() 
     tpl = tpl.replace('%PATH%', sys.argv[0])
     print(tpl)

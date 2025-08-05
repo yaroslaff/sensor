@@ -50,8 +50,4 @@ packages = ["remotecheck"]
 [tool.hatch.version]
 path = 'remotecheck/version.py'
 
-[tool.setuptools.data-files]
-okerrsensor = [
-    "contrib/okerr-sensor.service",
-    "contrib/okerr-sensor-venv.service",
-]
+
