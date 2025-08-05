@@ -108,7 +108,7 @@ def get_rmq_channel_safe(args):
         else:
             return channel
 
-def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
+def rmq_process(qlist, ch, reg_callback, ctl_callback, timeout=None, sleep=1):
     global properties
     started = time.time()
     while True:
@@ -124,7 +124,12 @@ def rmq_process(qlist, ch, callback, timeout=None, sleep=1):
                 print("Exited???")
 
             if method:
-                callback(ch, method, properties, body)
+                if qname.startswith('ctl:'):
+                    print("call ctl callback")
+                    ctl_callback(ch, method, properties, body)
+                else:
+                    print("call reg callback")
+                    reg_callback(ch, method, properties, body)
         if timeout and time.time() > started+timeout:
             return
         time.sleep(sleep)
@@ -508,7 +513,7 @@ def oneprocess(args):
             try:
                 hello(channel, myindicator)
                 print("zzz rmq process:", master_queues)
-                rmq_process(master_queues, channel, callback_regular_task, timeout=10)
+                rmq_process(master_queues, channel, callback_regular_task, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
                 # exit for restart
@@ -777,7 +782,7 @@ def main():
         while True:
             master_watchdog()
             try:
-                rmq_process(master_queues, channel, callback_ctl, timeout=10)
+                rmq_process(master_queues, channel, callback_ctl, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
                 # exit for restart
