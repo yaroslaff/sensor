@@ -6,7 +6,7 @@ After=okerr.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/local/bin/sensor.py
+ExecStart=%PATH%
 EnvironmentFile=/etc/okerr/env/sensor
 StandardOutput=append:/var/log/okerr/sensor-out.log
 StandardError=append:/var/log/okerr/sensor-err.log

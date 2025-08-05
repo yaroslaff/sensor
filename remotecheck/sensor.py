@@ -14,6 +14,7 @@ import ssl
 import re
 import datetime
 
+from pathlib import Path
 from multiprocessing import Process, current_process, active_children
 from setproctitle import setproctitle
 from dotenv import load_dotenv
@@ -521,14 +522,42 @@ def oneprocess(args):
         pass
 
 
+def testrmq(args: argparse.Namespace):
+    context = ssl.create_default_context(cafile=args.capem)
+    context.load_cert_chain(certfile=args.pem)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_REQUIRED
+
+    ssl_options = pika.SSLOptions(context, args.rmqhost)
+
+    credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
+    params = pika.ConnectionParameters(
+        host=args.rmqhost,
+        port=5671,
+        virtual_host=args.rmqvhost,
+        credentials=credentials,
+        ssl_options=ssl_options
+    )
+
+    try:
+        connection = pika.BlockingConnection(params)
+        channel = connection.channel()
+        queue = channel.queue_declare(queue='', exclusive=True)
+        print(f"OK, tmp test queue created: {queue.method.queue}")
+        connection.close()
+    except Exception as e:
+        print(f"ERROR {type(e)} : {e}")
 
 
 
-
-
-
-
-
+def dump_systemd():
+    pkg_dir = Path(__file__).parent.parent
+    tpl_file = pkg_dir / 'contrib' / 'okerr-sensor.service'
+    # print(tpl_file)
+    # print(sys.argv[0])
+    tpl = open(tpl_file).read() 
+    tpl = tpl.replace('%PATH%', sys.argv[0])
+    print(tpl)
 
 
 
@@ -601,7 +630,10 @@ def main():
     g.add_argument('--manual', default=list(), nargs='+', metavar=('CheckMethod','ARG'),
                    help='Run manual check. CheckMethods: {}. Example: --manual httpstatus url=http://okerr.com status=200'.format(' '.join(actions_list)))
 
-
+    g.add_argument('--testrmq', default=False, action='store_true', 
+                   help='check connection to RabbitMQ server')
+    g.add_argument('--systemd', default=False, action='store_true', 
+                   help='dump systemd unit file')
 
 
 
@@ -660,6 +692,16 @@ def main():
         sys.exit(0)
 
     sanity_check(args)
+
+    if args.testrmq:
+        testrmq(args)
+        sys.exit(0)
+
+    if args.systemd:
+        dump_systemd()
+        sys.exit(0)
+
+
 
     #
     # one-process mode

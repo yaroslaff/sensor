@@ -48,7 +48,7 @@ $ sudo sensor.py
 
 Specify check from CLI:
 ~~~
-./sensor.py --manual httpstatus url=https://cat.okerr.com/ status=200 options=addr=88.214.35.64
+sensor --manual httpstatus url=https://cat.okerr.com/ status=200 options=addr=88.214.35.64
 ~~~
 
 ## Install as systemd service
