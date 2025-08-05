@@ -234,6 +234,7 @@ def callback_ctl(ch, method, properties, body):
     global qindicators
 
     data = json.loads(body)
+    print("zzz task:", data['_task'])
 
     if data['_task'] == 'tproc.kill':
         for p in qworkers:
@@ -263,7 +264,7 @@ def callback_ctl(ch, method, properties, body):
         qworkers.append(p)
         qindicators[name] = p
     else:
-        log.error("Do not know how to process _task {!r} {!r}".format(data['_task'], data))
+        log.error(f"Do not know how to process _task={data['task']} data: {data}")
 
 def callback_regular_task(ch, method, properties, body):
     global processed
