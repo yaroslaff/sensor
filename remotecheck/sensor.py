@@ -124,11 +124,9 @@ def rmq_process(qlist, ch, reg_callback, ctl_callback, timeout=None, sleep=1):
                 print("Exited???")
 
             if method:
-                if qname.startswith('ctl:'):
-                    print("call ctl callback")
+                if qname.startswith('ctl:'):                    
                     ctl_callback(ch, method, properties, body)
                 else:
-                    print("call reg callback")
                     reg_callback(ch, method, properties, body)
         if timeout and time.time() > started+timeout:
             return
@@ -511,8 +509,7 @@ def oneprocess(args):
     try:
         while True:
             try:
-                hello(channel, myindicator)
-                print("zzz rmq process:", master_queues)
+                hello(channel, myindicator)                
                 rmq_process(master_queues, channel, callback_regular_task, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
