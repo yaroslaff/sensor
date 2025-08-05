@@ -234,7 +234,6 @@ def callback_ctl(ch, method, properties, body):
     global qindicators
 
     data = json.loads(body)
-    print("zzz task:", data['_task'])
 
     if data['_task'] == 'tproc.kill':
         for p in qworkers:
@@ -383,11 +382,13 @@ def worker_loop():
 
     channel = get_rmq_channel_safe(args)
     channel.queue_declare(queue='tasks:any', auto_delete=True)
+    print("consume tasks:any to callback_regular_task")
     channel.basic_consume(
         queue='tasks:any', on_message_callback=callback_regular_task, auto_ack=True)
 
     for qname in machine_info['qlist']:
         channel.queue_declare(queue='tasks:' + qname, auto_delete=True)
+        print(f"consume tasks:{qname} to callback_regular_task")
         channel.basic_consume(
             queue='tasks:' + qname, on_message_callback=callback_regular_task, auto_ack=True)
 
@@ -506,6 +507,7 @@ def oneprocess(args):
         while True:
             try:
                 hello(channel, myindicator)
+                print("zzz rmq process:", master_queues)
                 rmq_process(master_queues, channel, callback_regular_task, timeout=10)
             except pika.exceptions.AMQPError as e:
                 print("MAIN LOOP AMPQ exception: {}: {}, retry".format(type(e), e))
