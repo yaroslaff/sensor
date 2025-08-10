@@ -528,6 +528,20 @@ def oneprocess(args):
 
 
 def testrmq(args: argparse.Namespace):
+
+    print(f"""
+    Connection parameters:
+    Host: {args.rmqhost}
+    VHost: {args.rmqvhost}
+    User: {args.rmquser}
+    Password: {args.rmqpass}
+
+    SSL CA: {args.capem}
+    SSL Certificate: {args.pem}
+    """)
+
+    sanity_check(args)
+
     context = ssl.create_default_context(cafile=args.capem)
     context.load_cert_chain(certfile=args.pem)
     context.check_hostname = False
