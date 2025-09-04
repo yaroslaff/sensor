@@ -663,7 +663,9 @@ def get_args():
         args.capem = args.capem or os.getenv('SENSOR_CAPEM', def_capem)
 
     
-    print(args)
+    if args.verbose:
+        print(args)
+
     return args
 
 def main():
