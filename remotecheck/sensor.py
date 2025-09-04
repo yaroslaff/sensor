@@ -605,7 +605,7 @@ def get_args():
     parser = argparse.ArgumentParser(description=f'okerr indicator MQ tasks client ver {__version__}')
 
     g = parser.add_argument_group('Location')
-    g.add_argument('--name', default=os.getenv('SENSOR_NAME', 'noname@nowhere.tld'))
+    g.add_argument('--name', default=os.getenv('SENSOR_NAME', None))
     g.add_argument('--ip', default=os.getenv('SENSOR_IP', myip()))
 
     g = parser.add_argument_group('Options')
@@ -654,6 +654,7 @@ def get_args():
         print(f"Load env from {args.env}")
         load_dotenv(dotenv_path=args.env)
 
+        args.name = args.name or os.getenv('SENSOR_NAME', 'noname@nowhere.tld')
         args.rmqhost = args.rmqhost or os.getenv('RMQ_HOST', def_rmqhost)
         args.rmqvhost = args.rmqvhost or os.getenv('RMQ_VHOST', def_rmqvhost)
         args.rmquser = args.rmquser or os.getenv('RMQ_USER', def_rmquser)
