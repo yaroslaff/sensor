@@ -730,16 +730,16 @@ def main():
 
         sys.exit(0)
 
+    if args.systemd:
+        dump_systemd()
+        sys.exit(0)
+
+
     sanity_check(args)
 
     if args.testrmq:
         testrmq(args)
         sys.exit(0)
-
-    if args.systemd:
-        dump_systemd()
-        sys.exit(0)
-
 
 
     #
