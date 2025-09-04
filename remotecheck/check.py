@@ -37,7 +37,10 @@ from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 
 from .version import __version__
 from .exceptions import CheckException
-from .tcpport import check_tcpport
+from .check_tcpport import check_tcpport
+from .check_sslcert import check_sslcert
+
+
 from .checkargs import checkargs
 from .settings import settings
 
@@ -275,7 +278,7 @@ class Check(object):
             cargs = checkargs[self.cm]
         except KeyError:
             log.error(f"Unknown check {self.cm}")
-            raise CheckException(f"Unknown check {self.cm}")
+            raise CheckException(f"Unknown check {self.cm!r}. Known are: {' '.join(checkargs.keys())}")
 
         for arg in cargs['required']:
             if arg not in self.args:
@@ -341,94 +344,11 @@ class Check(object):
             self.details = "Cannot perform request URL {}: {}".format(url, e)
             self.status = "ERR"
 
+
     def action_sslcert(self):
-
-        CA_CERTS = "/etc/ssl/certs/ca-certificates.crt"
-
-        #
-        # get cert and return notAfter (datetime), NO verification
-        #
-        def nafter_noverify(addr, host,port,options):
-               
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect((addr, port))
-
-            ctx = ssl._create_unverified_context()
-            ctx.verify_mode = ssl.CERT_NONE
-            
-            sslsock = ctx.wrap_socket(
-                sock,
-                server_hostname = host,
-                # cert_reqs = ssl.CERT_NONE,
-                )
-                    
-            cert = sslsock.getpeercert(True)
-            x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert)
-            
-            m = re.match('(\d+)', x509.get_notAfter().decode('ascii'))
-            if m:
-                nafterstr = m.group(0)
-            else:
-                log.error("Cannot parse notAfter for {}:{}! '{}'".format(host,port,x509.get_notAfter().decode('ascii')))
-
-            cert_nafter = datetime.datetime.strptime(nafterstr, '%Y%m%d%H%M%S')
-
-            sock.close()
-            sslsock.close()
-
-            return cert_nafter
-
-        #
-        # get cert and return notAfter (datetime), verification
-        #
-        def nafter_verify(addr, host,port,options):
-
-            ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'    
-               
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect((addr, port))
-            
-
-            # !!! TODO FIXME check with wrong hostname (throws exception)
-            ctx = ssl.create_default_context()
-
-            sslsock = ctx.wrap_socket(
-                sock,
-                server_hostname = host,
-                )            
-            cert = sslsock.getpeercert()
-
-            ssl.match_hostname(cert,host)
-            nafterstr = cert['notAfter']
-            cert_nafter = datetime.datetime.strptime(nafterstr, ssl_date_fmt)
-            
-            sock.close()
-            sslsock.close()
-            return cert_nafter
-
-
-        
-        def certnames(cert):
-            names=[]
-            
-            if 'subject' in cert:
-                for subj in cert['subject']:
-                    if subj[0]=='commonName':
-                        names.append(subj[1])
-
-
-            if 'subjectAltName' in cert:
-                for san in cert['subjectAltName']:
-                    if san[0]=='DNS':
-                        names.append(san[1])
-            return names        
-
-
         try:
             host = self.args.get('host', 'okerr.com')
-            port = self.args.get('port', '443')
+            port = int(self.args.get('port', '443'))
             days = self.args.get('days', 20)
             options = self.args.get('options','')    
         except KeyError as e:
@@ -436,73 +356,14 @@ class Check(object):
             self.details = str(e)
             return
 
-
-        o = dict()
-        for s in shlex.split(options):
-            if '=' in s:
-                k,v = s.split('=',1)
-                o[k]=v
-            else:
-                o[s]=True
-
-        if 'addr' in o:
-            addr = o['addr']
-        else:
-            addr = host
-
         try:
-            port = int(port)
-            days = int(days)
-        except ValueError as e:
-            self.status = 'ERR'
+            result = check_sslcert(host=host, port=port, days=days, options=options)
+            self.status = "OK"
+            self.details = result
+        except CheckException as e:
+            self.status = "ERR"
             self.details = str(e)
             return
-
-        try:
-            
-            if 'noverify' in o or 'ssl_noverify' in o:
-                cert_nafter = nafter_noverify(addr, host, port, options)
-            else:
-                cert_nafter = nafter_verify(addr, host, port, options)
-
-                        
-            cur_date = datetime.datetime.utcnow()
-                        
-            #cert_nafter = datetime.datetime.strptime(cert['notAfter'], ssl_date_fmt)
-
-            expire_days = int((cert_nafter - cur_date).days)
-
-        except (socket.gaierror, socket.timeout, socket.error) as e:                
-            self.details = 'socket error: {}'.format(str(e))                
-            self.status = "ERR"
-                                
-            # add details if this is hostname
-            
-            try:
-                socket.inet_aton(host)
-            except socket.error:          
-                # this is hostname
-                ips = list()
-                my_resolver = dns.resolver.Resolver()
-                try:
-                    answer = my_resolver.query(host, 'a')
-                    for rr in answer.rrset:
-                        ips.append(rr.address)
-                except DNSException:
-                    return 
-                self.details += ' (DNS: {})'.format(' '.join(ips))
-            return
-            
-        except (ssl.CertificateError, ssl.SSLError) as e:
-            self.details = 'SSL error: {}'.format(str(e))
-            self.status = "ERR"
-            return 
-            
-        self.details = "{} days left".format(expire_days)
-        if expire_days > days:
-            self.status = "OK"
-        else:
-            self.status = "ERR"
 
     def action_sha1static(self):
         url = self.args.get("url", 'http://okerr.com/')                
@@ -618,60 +479,6 @@ class Check(object):
             self.status = "ERR"
             self.details = str(e)
             return
-
-
-    def UNUSED_action_tcpport(self):    
-        host = self.args["host"]
-        port = int(self.args["port"])
-        substr = self.args["substr"]
-        timeout=2
-        
-        try:
-            ip = socket.gethostbyname(host)
-            print("IP: ", ip)
-        except socket.gaierror:
-            self.status = "ERR"
-            self.details = "cannot resolve {}".format(host)
-            return
-            
-        try:
-            c = socket.create_connection((ip,port), 2)
-            if len(substr)>0:
-                c.setblocking(0)
-
-                ready = select.select([c], [], [], timeout)
-                if ready[0]:
-                    data = c.recv(4096).decode('utf8')
-                    pos = data.find(substr)
-                    data = re.sub("[\r\n]","",data) # delete newlines
-
-                    if len(data)>20:
-                        preview = data[:20]+'...'
-                    else:
-                        preview = data
-
-                    if pos<0:
-                        self.status = "ERR"
-                        self.details = "Not found substr '{}' in banner '{}'".format(substr, preview)
-                        return 
-                    else:
-                        self.status = "OK"
-                        self.details = "Found substr '{}' in banner '{}'".format(substr, preview)
-                        return
-                else:
-                    self.status = "ERR"
-                    self.details = "Did not get banner"
-                    return
-            else:
-                self.status = "OK"
-                self.details = "Connected to {host}:{port} at {ip}".format(host=host,port=port,ip=ip)
-                return 
-            
-        except socket.error:
-            self.status = "ERR"
-            self.details = "failed to connect to {host}:{port} at {ip}".format(host=host,port=port,ip=ip)
-            return
-
 
 
     def action_httpgrep(self):

@@ -4,6 +4,7 @@ import sys
 from .exceptions import CheckException
 
 def check_tcpport(host, port, timeout=5, substr=None):
+    sock = None
     try:
         # Разрешаем хост в IP-адрес (поддерживает IPv4 и IPv6)
         addrinfo = socket.getaddrinfo(host, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
@@ -36,7 +37,8 @@ def check_tcpport(host, port, timeout=5, substr=None):
             except socket.error as e:
                 raise CheckException(f"socket.error on {sa[0]}:{port}: {e}")
             finally:
-                sock.close()
+                if sock:
+                    sock.close()  # Закрываем соединение в любом случае
         
         raise CheckException(f"Can not connect (2) to {sa[0]}:{port}: {e}")
     except socket.gaierror as e:
