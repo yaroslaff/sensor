@@ -349,7 +349,7 @@ class Check(object):
         try:
             host = self.args.get('host', 'okerr.com')
             port = int(self.args.get('port', '443'))
-            days = self.args.get('days', 20)
+            days = int(self.args.get('days', '20'))
             options = self.args.get('options','')    
         except KeyError as e:
             self.status = 'ERR'

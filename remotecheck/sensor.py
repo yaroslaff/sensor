@@ -353,6 +353,7 @@ def hello_loop():
                 body=json.dumps(r))
             try:
                 # log.info('ZZZZ hello.loop update {}'.format(myindicator))
+                print("loop update")
                 myindicator.update('OK', 'v: {} up: {}'.format(__version__, dhms(time.time() - started)))
             except okerrupdate.OkerrExc as e:
                 log.error("okerr update error: {}".format(str(e)))
@@ -509,6 +510,7 @@ def oneprocess(args):
     try:
         while True:
             try:
+                print(f"HELLO {myindicator}")
                 hello(channel, myindicator)                
                 rmq_process(master_queues, channel, callback_regular_task, callback_ctl, timeout=10)
             except pika.exceptions.AMQPError as e:
@@ -577,22 +579,7 @@ def dump_systemd():
     print(tpl)
 
 
-
-def main():
-    global log
-    global channel
-    global args
-    global machine_info
-    global workers
-    global hello_process
-    global role
-    global myindicator
-
-    role = 'master'
-
-    # main code
-    conf_file = '/etc/okerr/okerrupdate'
-    load_dotenv(dotenv_path=conf_file)
+def get_args():
 
     def_pem = os.getenv('SENSOR_PEM','/etc/okerr/ssl/client.pem')
     def_capem = os.getenv('SENSOR_CAPEM', '/etc/okerr/ssl/ca.pem')
@@ -601,7 +588,6 @@ def main():
     def_rmqvhost = 'okerr'
     def_rmquser = 'okerr'
     def_rmqpass = 'okerr_default_password'
-
 
 
     actions_list = [
@@ -630,17 +616,17 @@ def main():
 
 
     g = parser.add_argument_group('RabbitMQ options')
-    g.add_argument('--rmqhost', default=os.getenv('RMQ_HOST', def_rmqhost),
-                   help='RabbitMQ host ($RMQ_HOST, {})'.format(os.getenv('RMQ_HOST', def_rmqhost)))
-    g.add_argument('--rmqvhost', default=os.getenv('RMQ_VHOST',def_rmqvhost),
-                   help='RabbitMQ VirtualHost ($RMQ_VHOST, {})'.format(os.getenv('RMQ_VHOST', def_rmqvhost)))
-    g.add_argument('--rmquser', default=os.getenv('RMQ_USER', def_rmquser),
-                   help='RabbitMQ username ($RMQ_USER, {})'.format(os.getenv('RMQ_USER', def_rmquser)))
-    g.add_argument('--rmqpass', default=os.getenv('RMQ_PASS', def_rmqpass),
-                   help='RabbitMQ password ($RMQ_PASS, {})'.format(os.getenv('RMQ_PASS', def_rmqpass)))
-    g.add_argument('--pem', default=def_pem,
+    g.add_argument('--rmqhost', default=os.getenv('RMQ_HOST', None),
+                   help='RabbitMQ host ($RMQ_HOST, {})'.format(os.getenv('RMQ_HOST', None)))
+    g.add_argument('--rmqvhost', default=os.getenv('RMQ_VHOST',None),
+                   help='RabbitMQ VirtualHost ($RMQ_VHOST, {})'.format(os.getenv('RMQ_VHOST', None)))
+    g.add_argument('--rmquser', default=os.getenv('RMQ_USER', None),
+                   help='RabbitMQ username ($RMQ_USER, {})'.format(os.getenv('RMQ_USER', None)))
+    g.add_argument('--rmqpass', default=os.getenv('RMQ_PASS', None),
+                   help='RabbitMQ password ($RMQ_PASS, {})'.format(os.getenv('RMQ_PASS', None)))
+    g.add_argument('--pem', default=None,
                    help='Client cert+key PEM file: ({})'.format(def_pem))
-    g.add_argument('--capem', default=def_capem,
+    g.add_argument('--capem', default=None,
                    help='CA cert PEM file: {}'.format(def_capem))
 
     g = parser.add_argument_group('Debugging/development')
@@ -652,6 +638,8 @@ def main():
     g.add_argument('--systemd', default=False, action='store_true', 
                    help='dump systemd unit file')
 
+    g.add_argument('--env', default=None, 
+                   help='Load this env file')
 
 
     # {'_task': 'tproc.indicator', 'id': 20088699, 'textid': 'okrrdm', 'name': 'медуза', 'cm': 'httpstatus', 
@@ -662,6 +650,36 @@ def main():
 
     args = parser.parse_args()
 
+    if args.env:
+        print(f"Load env from {args.env}")
+        load_dotenv(dotenv_path=args.env)
+
+        args.rmqhost = args.rmqhost or os.getenv('RMQ_HOST', def_rmqhost)
+        args.rmqvhost = args.rmqvhost or os.getenv('RMQ_VHOST', def_rmqvhost)
+        args.rmquser = args.rmquser or os.getenv('RMQ_USER', def_rmquser)
+        args.rmqpass = args.rmqpass or os.getenv('RMQ_PASS', def_rmqpass)
+        args.pem = args.pem or os.getenv('SENSOR_PEM', def_pem)
+        args.capem = args.capem or os.getenv('SENSOR_CAPEM', def_capem)
+
+    
+    print(args)
+    return args
+
+def main():
+    global log
+    global channel
+    global args
+    global machine_info
+    global workers
+    global hello_process
+    global role
+    global myindicator
+
+    role = 'master'
+
+    # main code
+    conf_file = '/etc/okerr/okerrupdate'
+    load_dotenv(dotenv_path=conf_file)
 
     log = logging.getLogger('okerr')
 
@@ -670,6 +688,9 @@ def main():
                                        datefmt='%Y/%m/%d %H:%M:%S'))
     out.setLevel(logging.INFO)
     log.addHandler(out)
+
+    args = get_args()
+
     if args.verbose:
         log.setLevel(logging.DEBUG)
     else:
