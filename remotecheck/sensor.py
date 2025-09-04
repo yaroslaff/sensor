@@ -654,13 +654,13 @@ def get_args():
         print(f"Load env from {args.env}")
         load_dotenv(dotenv_path=args.env)
 
-        args.name = args.name or os.getenv('SENSOR_NAME', 'noname@nowhere.tld')
-        args.rmqhost = args.rmqhost or os.getenv('RMQ_HOST', def_rmqhost)
-        args.rmqvhost = args.rmqvhost or os.getenv('RMQ_VHOST', def_rmqvhost)
-        args.rmquser = args.rmquser or os.getenv('RMQ_USER', def_rmquser)
-        args.rmqpass = args.rmqpass or os.getenv('RMQ_PASS', def_rmqpass)
-        args.pem = args.pem or os.getenv('SENSOR_PEM', def_pem)
-        args.capem = args.capem or os.getenv('SENSOR_CAPEM', def_capem)
+    args.name = args.name or os.getenv('SENSOR_NAME', 'noname@nowhere.tld')
+    args.rmqhost = args.rmqhost or os.getenv('RMQ_HOST', def_rmqhost)
+    args.rmqvhost = args.rmqvhost or os.getenv('RMQ_VHOST', def_rmqvhost)
+    args.rmquser = args.rmquser or os.getenv('RMQ_USER', def_rmquser)
+    args.rmqpass = args.rmqpass or os.getenv('RMQ_PASS', def_rmqpass)
+    args.pem = args.pem or os.getenv('SENSOR_PEM', def_pem)
+    args.capem = args.capem or os.getenv('SENSOR_CAPEM', def_capem)
 
     
     if args.verbose:
