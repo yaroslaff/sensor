@@ -12,7 +12,7 @@ import dns.resolver
 from .exceptions import CheckException
 from .connect46 import connect46
 
-def check_sslcert(host, port, days, options):
+def check_sslcert(host: str, port: int, days: int, options):
 
     CA_CERTS = "/etc/ssl/certs/ca-certificates.crt"
 
@@ -53,7 +53,7 @@ def check_sslcert(host, port, days, options):
     #
     # get cert and return notAfter (datetime), verification
     #
-    def nafter_verify(addr, host,port,options):
+    def nafter_verify(addr, host, port, options):
 
         ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'    
             
