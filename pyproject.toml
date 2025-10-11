@@ -32,7 +32,7 @@ dependencies = [
     "dnspython",
     "icmplib",
     "python-dotenv",
-    "async-dnsbl-client>=0.0.3",
+    "async-dnsbl-client>=0.0.5",
     "pika>=1.1.0",
     "forcediphttpsadapter"
 ]
