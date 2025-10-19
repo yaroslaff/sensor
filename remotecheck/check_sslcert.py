@@ -136,4 +136,4 @@ def check_sslcert(host: str, port: int, days: int, options):
         return "{} days left".format(expire_days)
     else:
         if expire_days > 0:
-            raise CheckException('Certificate will expire soon (in {expire_days})')
+            raise CheckException(f'Certificate will expire soon (in {expire_days})')
