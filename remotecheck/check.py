@@ -523,6 +523,11 @@ class Check(object):
 
 
     def action_whois(self):
+
+        def is_aware(dt):
+            """Check if datetime is aware (has timezone info)"""
+            return dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None
+
         domain = self.args["domain"]
         days = int(self.args.get("days", "30"))
 
@@ -548,7 +553,10 @@ class Check(object):
         
         if isinstance(exp, list):
             exp = exp[0]
-        
+
+        # sometimes exp could be timezone aware, force it to be naive
+        exp = exp.replace(tzinfo=None)
+
         left = exp - today
 
         if left.days > 0:
