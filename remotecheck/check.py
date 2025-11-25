@@ -531,6 +531,12 @@ class Check(object):
         domain = self.args["domain"]
         days = int(self.args.get("days", "30"))
 
+        if domain.endswith('.jp'):
+            self.status = "ERR"
+            self.details = "Sorry, python-whois currently not working well with .jp TLDs"
+            return 
+
+
         try:
             w = whois.whois(domain)
         except (ConnectionResetError, Exception) as e:
