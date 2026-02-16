@@ -83,7 +83,7 @@ def get_rmq_channel(args):
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
     context = ssl.create_default_context(cafile=args.capem)
     context.load_cert_chain(args.pem)
-    ssl_options = pika.SSLOptions(context, "rabbitmq")
+    ssl_options = pika.SSLOptions(context, args.rmqhost)
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
