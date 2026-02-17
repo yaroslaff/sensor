@@ -5,6 +5,10 @@ import ssl
 import re
 import datetime
 import shlex
+import fnmatch
+
+import cryptography
+from cryptography.x509.oid import ExtensionOID
 
 from dns.exception import DNSException
 import dns.resolver
@@ -19,66 +23,20 @@ def check_sslcert(host: str, port: int, days: int, options):
     #
     # get cert and return notAfter (datetime), NO verification
     #
-    def nafter_noverify(addr, host,port, options):
-            
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)
-        sock.connect((addr, port))
 
-        ctx = ssl._create_unverified_context()
-        ctx.verify_mode = ssl.CERT_NONE
-        
-        sslsock = ctx.wrap_socket(
-            sock,
-            server_hostname = host,
-            # cert_reqs = ssl.CERT_NONE,
-            )
-                
-        cert = sslsock.getpeercert(True)
-        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert)
-        
-        m = re.match('(\d+)', x509.get_notAfter().decode('ascii'))
-        if m:
-            nafterstr = m.group(0)
-        else:
-            print("Cannot parse notAfter for {}:{}! '{}'".format(host,port,x509.get_notAfter().decode('ascii')))
+    def nafter(addr: str, hostname: str, port: int, verify: bool = True) -> datetime.datetime:
+        context = ssl.create_default_context()
+        if not verify:
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
 
-        cert_nafter = datetime.datetime.strptime(nafterstr, '%Y%m%d%H%M%S')
+        with socket.create_connection((addr, port), timeout=10) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as sslsock:
+                der_cert = sslsock.getpeercert(binary_form=True)
 
-        sock.close()
-        sslsock.close()
+        cert = cryptography.x509.load_der_x509_certificate(der_cert)
+        return cert.not_valid_after_utc
 
-        return cert_nafter
-
-    #
-    # get cert and return notAfter (datetime), verification
-    #
-    def nafter_verify(addr, host, port, options):
-
-        ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'    
-            
-        # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # sock.settimeout(5)
-        # sock.connect((addr, port))
-        sock = connect46(host, port, timeout=5)
-        
-
-        # !!! TODO FIXME check with wrong hostname (throws exception)
-        ctx = ssl.create_default_context()
-
-        sslsock = ctx.wrap_socket(
-            sock,
-            server_hostname = host,
-            )            
-        cert = sslsock.getpeercert()
-
-        ssl.match_hostname(cert,host)
-        nafterstr = cert['notAfter']
-        cert_nafter = datetime.datetime.strptime(nafterstr, ssl_date_fmt)
-        
-        sock.close()
-        sslsock.close()
-        return cert_nafter
 
 
     o = dict()
@@ -95,14 +53,12 @@ def check_sslcert(host: str, port: int, days: int, options):
         addr = host
 
     try:
-        
-        if 'noverify' in o or 'ssl_noverify' in o:
-            cert_nafter = nafter_noverify(addr, host, port, options)
-        else:
-            cert_nafter = nafter_verify(addr, host, port, options)
 
+
+        #if 'noverify' in o or 'ssl_noverify' in o:
+        cert_nafter = nafter(addr, host, port, verify='noverify' not in o and 'ssl_noverify' not in o)
                     
-        cur_date = datetime.datetime.utcnow()
+        cur_date = datetime.datetime.now(datetime.timezone.utc)
                     
         #cert_nafter = datetime.datetime.strptime(cert['notAfter'], ssl_date_fmt)
 
