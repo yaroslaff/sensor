@@ -83,6 +83,8 @@ def get_rmq_channel(args):
     credentials = pika.PlainCredentials(args.rmquser, args.rmqpass)
     context = ssl.create_default_context(cafile=args.capem)
     context.load_cert_chain(args.pem)
+    context.check_hostname = not args.nohost
+
     ssl_options = pika.SSLOptions(context, args.rmqhost)
 
     connection = pika.BlockingConnection(
@@ -546,7 +548,9 @@ def testrmq(args: argparse.Namespace):
 
     context = ssl.create_default_context(cafile=args.capem)
     context.load_cert_chain(certfile=args.pem)
-    context.check_hostname = False
+
+    context.check_hostname = not args.nohost
+
     context.verify_mode = ssl.CERT_REQUIRED
 
     ssl_options = pika.SSLOptions(context, args.rmqhost)
@@ -588,6 +592,7 @@ def get_args():
     def_rmqvhost = 'okerr'
     def_rmquser = 'okerr'
     def_rmqpass = 'okerr_default_password'
+    def_nohost = bool(os.getenv('SENSOR_NOHOST', ''))
 
 
     actions_list = [
@@ -628,6 +633,10 @@ def get_args():
                    help='Client cert+key PEM file: ({})'.format(def_pem))
     g.add_argument('--capem', default=None,
                    help='CA cert PEM file: {}'.format(def_capem))
+
+    g.add_argument('--nohost', action='store_true', default=def_nohost, help='Do not detect and use my IP address (useful for testing)')                
+
+
 
     g = parser.add_argument_group('Debugging/development')
     g.add_argument('--manual', default=list(), nargs='+', metavar=('CheckMethod','ARG'),
