@@ -1,7 +1,6 @@
 import socket
 import sys
 import requests
-import chardet
 
 from .exceptions import CheckException
 from .rget import rget
