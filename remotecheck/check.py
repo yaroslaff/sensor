@@ -37,9 +37,10 @@ from forcediphttpsadapter.adapters import ForcedIPHTTPSAdapter
 
 from .version import __version__
 from .exceptions import CheckException
+from .rget import rget
 from .check_tcpport import check_tcpport
 from .check_sslcert import check_sslcert
-
+from .check_httpgrep import check_httpgrep
 
 from .checkargs import checkargs
 from .settings import settings
@@ -228,50 +229,6 @@ class Check(object):
         print(self)
 
 
-    def rget(self, url, options='', allow_redirects=True):
-
-        verify = True
-        headers = {
-            'User-Agent': self.user_agent
-        }
-        
-        
-        url_parsed = urllib.parse.urlparse(url)
-        url_scheme = url_parsed.scheme
-        if ':' in url_parsed.netloc:
-            url_host = url_parsed.netloc.split(':')[0]
-        else:
-            url_host = url_parsed.netloc
-    
-        o = dict()
-        for s in shlex.split(options):
-            if '=' in s:
-                k,v = s.split('=',1)
-                o[k]=v
-            else:
-                o[s]=True
-                
-        if 'ssl_noverify' in  o:
-            verify = False
-        
-        session = requests.Session()
-        params = dict()
-        if 'addr' in o:
-            if url_scheme == 'https':
-                # https
-                session.mount(url, ForcedIPHTTPSAdapter(dest_ip=o['addr']))
-            else:
-                # http
-                url_changed = url_parsed._replace(netloc = o['addr'])
-                headers['Host'] = url_host
-                url = urllib.parse.urlunparse(url_changed)
-
-        r = session.get(
-            url, verify=verify, headers=headers, allow_redirects=allow_redirects, timeout=3, 
-            params=params)
-        return r
-
-
     def check_args(self):
         
         try:
@@ -326,7 +283,7 @@ class Check(object):
 
         try:
         
-            r = self.rget(url, options=options, allow_redirects=False)
+            r = rget(url, options=options, allow_redirects=False)
 
             if r.status_code == required_status:
                 # good, status as it should be
@@ -372,7 +329,7 @@ class Check(object):
         setargs = dict()
 
         try:
-            r = self.rget(url, options)
+            r = rget(url, options)
            
             if r.status_code != 200:
                 self.status = "ERR"
@@ -407,7 +364,7 @@ class Check(object):
         options = self.args.get("options",'')
 
         try:
-            r=self.rget(url, options = options)
+            r=rget(url, options = options)
 
             if r.status_code != 200:
                 self.status = "ERR"
@@ -489,37 +446,13 @@ class Check(object):
 
 
         try:
-            r = self.rget(url, options)
-
-            if r.status_code != 200:
-                self.status = "ERR"
-                self.details = "Status code: {} (not 200)".format(str(r.status_code))
-                return
-
-            ucontent = r.content.decode('utf8')
-
-            # check if it has musthave
-            if len(musthave)>0:
-                if ucontent.find(musthave) == -1:
-                    self.status = "ERR"
-                    self.details = "Content has no substring '{}'".format(musthave)
-                    return
-
-            if len(mustnothave)>0:
-                if ucontent.find(mustnothave) >= 0:
-                    self.status = "ERR"
-                    self.details = "Content has substring '{}'".format(mustnothave)
-                    return
-            
+            result = check_httpgrep(url=url, musthave=musthave, mustnothave=mustnothave, options=options)
             self.status = "OK"
-            self.details = ""
-            return
-        
-        except requests.exceptions.RequestException as e:
+            self.details = result
+        except CheckException as e:
             self.status = "ERR"
-            self.details = "Cannot perform request URL {}: {}".format(url, e)
+            self.details = str(e)
             return
-
 
 
     def action_whois(self):
