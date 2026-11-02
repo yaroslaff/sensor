@@ -79,10 +79,9 @@ def check_sslcert(host: str, port: int, days: int, options):
                 for rr in answer.rrset:
                     ips.append(rr.address)
             except DNSException:
-                return 
+                raise CheckException(details + ' (DNS: not resolved)')
             details += ' (DNS: {})'.format(' '.join(ips))
-            raise CheckException(details)
-        return
+        raise CheckException(details)
         
     except (ssl.CertificateError, ssl.SSLError) as e:
         raise CheckException('SSL error: {}'.format(str(e)))
@@ -93,3 +92,4 @@ def check_sslcert(host: str, port: int, days: int, options):
     else:
         if expire_days > 0:
             raise CheckException(f'Certificate will expire soon (in {expire_days} days)')
+        raise CheckException(f'Certificate expired (notAfter: {cert_nafter:%Y-%m-%d})')
